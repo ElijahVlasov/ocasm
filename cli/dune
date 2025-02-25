@@ -1,0 +1,7 @@
+(library
+ (name ocasm_cli)
+ (flags
+  (:standard -w -26-27-32-37))
+ (libraries getopt rv32 elf)
+ (preprocess
+  (pps ppx_deriving.show ppx_deriving.eq)))

@@ -1,0 +1,13 @@
+(ocamllex lexer)
+
+(menhir
+ (modules parser)
+ (flags (--table)))
+
+(library
+ (name rv32)
+ (libraries menhirLib)
+ (flags
+  (:standard -w -26-27-32-37))
+ (preprocess
+  (pps ppx_deriving.show ppx_deriving.eq)))

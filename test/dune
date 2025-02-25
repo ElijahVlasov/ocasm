@@ -1,0 +1,19 @@
+(test
+ (name test_instruction)
+ (libraries rv32 alcotest))
+
+(test
+ (name test_fence_type)
+ (libraries rv32 alcotest))
+
+(test
+ (name test_immediate)
+ (libraries rv32 alcotest))
+
+(test
+ (name test_single_instruction_parsing)
+ (libraries rv32 alcotest))
+
+(test
+ (name test_parser_code_snippets)
+ (libraries rv32 alcotest))
