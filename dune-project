@@ -14,7 +14,7 @@
  (maintainers "Ilia Vlasov <elijah.vlasov@gmail.com>")
  (authors "Ilia Vlasov <elijah.vlasov@gmail.com>")
  (license MIT)
- (depends ocaml ppx_deriving alcotest menhir getopt)
+ (depends ocaml ocamlformat ppx_deriving alcotest menhir getopt)
  (tags
   ("riscv" "assembler" "assembly"))
   (source

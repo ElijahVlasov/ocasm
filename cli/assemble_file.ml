@@ -72,8 +72,7 @@ let assemble program =
   | Ok structured_instructions ->
       let raw_instructions =
         List.map
-          (fun structured_instruction ->
-            ast_to_raw structured_instruction)
+          (fun structured_instruction -> ast_to_raw structured_instruction)
           structured_instructions
       in
       let elf_file = emit_elf raw_instructions in
