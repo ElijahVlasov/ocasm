@@ -12,6 +12,7 @@ bug-reports: "https://github.com/ElijahVlasov/ocasm/issues"
 depends: [
   "dune" {>= "3.17"}
   "ocaml"
+  "ocamlformat"
   "ppx_deriving"
   "alcotest"
   "menhir"
