@@ -4,7 +4,9 @@ let of_int n = if n < 0 || n > 31 then None else Some (Int32.of_int n)
 let of_int32 n = if n < 0l || n > 31l then None else Some n
 let to_int n = Int32.to_int n
 let to_int32 n = n
-let to_string n = Printf.sprintf "x%d" (to_int n)
+let to_string n =
+  
+  Printf.sprintf "x%d" (to_int n)
 let pp_register fmt n = Format.fprintf fmt "%s" (to_string n)
 let equal_register r1 r2 = r1 = r2
 let x0 : register = 0l
