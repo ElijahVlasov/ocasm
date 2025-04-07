@@ -68,6 +68,7 @@ module InstructionBuilder = struct
   let funct3 x = Funct3.to_int32 x
   let funct7 x = Funct7.to_int32 x
 
+  (* TODO: should these to_int32's be to_int32_unchecked? *)
   let imm_11_0 imm =
     let imm = Immediate12.to_int32 imm in
     imm << Positions.imm_11_0
