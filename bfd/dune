@@ -1,0 +1,8 @@
+(library
+ (name bfd)
+ (libraries base ctypes ctypes-foreign)
+ (flags
+  (:standard -w -26-27-32-37))
+ (preprocess
+  (pps ppx_deriving.show ppx_deriving.eq)))
+

@@ -11,6 +11,8 @@ homepage: "https://github.com/ElijahVlasov/ocasm"
 bug-reports: "https://github.com/ElijahVlasov/ocasm/issues"
 depends: [
   "dune" {>= "3.17"}
+  "ctypes"
+  "ctypes-foreign"
   "ocaml"
   "ocamlformat"
   "ppx_deriving"
