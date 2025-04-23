@@ -1,9 +1,10 @@
-(lang dune 3.17)
+(lang dune 3.18)
 
 (name ocasm)
 
 (generate_opam_files true)
 
+(using ctypes 0.3)
 (using menhir 3.0)
 
 (package
@@ -14,7 +15,15 @@
  (maintainers "Ilia Vlasov <elijah.vlasov@gmail.com>")
  (authors "Ilia Vlasov <elijah.vlasov@gmail.com>")
  (license MIT)
- (depends ctypes ctypes-foreign ocaml ocamlformat ppx_deriving alcotest menhir getopt)
+ (depends
+  ctypes
+  ctypes-foreign
+  (ocaml (>= 5.3.0))
+  ocamlformat
+  ppx_deriving
+  alcotest
+  menhir
+  getopt)
  (tags
   ("riscv" "assembler" "assembly"))
   (source

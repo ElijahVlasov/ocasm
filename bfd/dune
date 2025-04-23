@@ -4,5 +4,21 @@
  (flags
   (:standard -w -26-27-32-37))
  (preprocess
-  (pps ppx_deriving.show ppx_deriving.eq)))
-
+  (pps ppx_deriving.show ppx_deriving.eq))
+ (ctypes
+  (external_library_name libbfd)
+  (build_flags_resolver
+   (vendored
+    (c_flags ())
+    (c_library_flags -lbfd)))
+  (headers
+   (include "bfd.h"))
+  (type_description
+   (instance Types)
+   (functor Type_description))
+  (function_description
+   (concurrency unlocked)
+   (instance Functions)
+   (functor Function_description))
+  (generated_types Types_generated)
+  (generated_entry_point C)))

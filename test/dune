@@ -18,8 +18,7 @@
  (name test_parser_code_snippets)
  (libraries rv32 alcotest))
 
-(test 
-  (name test_bfd)
-  (libraries alcotest bfd)
-  (link_flags -cclib -lbfd)
-  )
+(test
+ (name test_bfd)
+ (libraries alcotest bfd)
+ (link_flags -cclib -lbfd))
