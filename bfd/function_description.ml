@@ -8,7 +8,7 @@ module Types = Types_generated
 module Functions (F : Ctypes.FOREIGN) = struct
   open F
 
-  let bfd_init = foreign "bfd_init" (void @-> returning int)
+  let bfd_init = foreign "bfd_init" (void @-> returning size_t)
 
   let bfd_openw =
     foreign "bfd_openw" (string @-> string @-> returning (ptr Types.bfd))
