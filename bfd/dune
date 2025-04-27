@@ -9,10 +9,10 @@
   (external_library_name libbfd)
   (build_flags_resolver
    (vendored
-    (c_flags ())
-    (c_library_flags -lbfd)))
+    (c_flags -D PACKAGE -D PACKAGE_NAME)
+    (c_library_flags -L%{env:RISC_V_TOOLCHAIN=}/lib/ -lbfd)))
   (headers
-   (include "bfd.h"))
+   (include "%{env:RISC_V_TOOLCHAIN=}/include/bfd.h"))
   (type_description
    (instance Types)
    (functor Type_description))

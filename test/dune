@@ -21,4 +21,4 @@
 (test
  (name test_bfd)
  (libraries alcotest bfd)
- (link_flags -cclib -lbfd))
+ (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib  -cclib -lbfd))

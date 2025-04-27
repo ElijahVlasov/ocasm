@@ -10,7 +10,6 @@ let _ =
 type bfd = C.Types.bfd structure ptr
 
 let with_bfd (name : string) (target : string) (f : bfd -> 'a) =
-  Printf.printf "hi";
   let bfd = C.Functions.bfd_openw name target in
   protect
     ~finally:(fun x ->

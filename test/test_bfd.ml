@@ -1,1 +1,1 @@
-let () = Bfd.with_bfd "lol" "elfNN-littleriscv" (fun _ -> ())
+let () = Bfd.with_bfd "lol" "elf32-littleriscv" (fun _ -> ())
