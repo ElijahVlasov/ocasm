@@ -1,0 +1,34 @@
+type t = int32
+
+let equal x y = x = y
+let pp = Base.Int32.pp
+let sec_no_flags : t = 0x000l
+let sec_alloc = 0x001l
+let sec_load = 0x002l
+let sec_reloc = 0x004l
+let sec_balign = 0x008l
+let sec_readonly = 0x010l
+let sec_code = 0x020l
+let sec_data = 0x040l
+let sec_rom = 0x080l
+let sec_constructor = 0x100l
+let sec_constructor_text = 0x1100l
+let sec_constructor_data = 0x2100l
+let sec_constructor_bss = 0x3100l
+let sec_has_contents = 0x200l
+let sec_never_load = 0x400l
+let sec_coff_shared_library = 0x800l
+let sec_is_common = 0x8000l
+let sec_debugging = 0x10000l
+let sec_in_memory = 0x20000l
+let sec_exclude = 0x40000l
+let sec_sort_entries = 0x80000l
+let sec_link_once = 0x100000l
+let sec_link_duplicates = 0x600000l
+let sec_link_duplicates_discard = 0x0l
+let sec_link_duplicates_one_only = 0x200000l
+let sec_link_duplicates_same_size = 0x400000l
+let sec_link_duplicates_same_contents = 0x600000l
+let sec_linker_created = 0x800000l
+let ( |+ ) = Int32.logor
+let to_int32 = Fun.id

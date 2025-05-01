@@ -14,4 +14,28 @@ module Functions (F : Ctypes.FOREIGN) = struct
     foreign "bfd_openw" (string @-> string @-> returning (ptr Types.bfd))
 
   let bfd_close = foreign "bfd_close" (ptr Types.bfd @-> returning bool)
+
+  let bfd_get_error =
+    foreign "bfd_get_error" (void @-> returning Types.bfd_error_type)
+
+  let bfd_perror = foreign "bfd_perror" (string @-> returning void)
+
+  let bfd_errmsg =
+    foreign "bfd_errmsg" (Types.bfd_error_type @-> returning string)
+
+  let bfd_set_format =
+    foreign "bfd_set_format" (ptr Types.bfd @-> int64_t @-> returning bool)
+
+  let bfd_make_section =
+    foreign "bfd_make_section"
+      (ptr Types.bfd @-> string @-> returning (ptr Types.asection))
+
+  let bfd_set_section_flags =
+    foreign "bfd_set_section_flags"
+      (ptr Types.asection @-> int32_t @-> returning bool)
+
+  let bfd_set_section_contents =
+    foreign "bfd_set_section_contents"
+      (ptr Types.bfd @-> ptr Types.asection @-> ptr void @-> int64_t @-> size_t
+     @-> returning bool)
 end
