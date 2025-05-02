@@ -38,4 +38,8 @@ module Functions (F : Ctypes.FOREIGN) = struct
     foreign "bfd_set_section_contents"
       (ptr Types.bfd @-> ptr Types.asection @-> ptr void @-> int64_t @-> size_t
      @-> returning bool)
+
+  let bfd_set_section_size =
+    foreign "bfd_set_section_size"
+      (ptr Types.asection @-> size_t @-> returning bool)
 end

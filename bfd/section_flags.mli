@@ -7,15 +7,11 @@ val sec_no_flags : t
 val sec_alloc : t
 val sec_load : t
 val sec_reloc : t
-val sec_balign : t
 val sec_readonly : t
 val sec_code : t
 val sec_data : t
 val sec_rom : t
 val sec_constructor : t
-val sec_constructor_text : t
-val sec_constructor_data : t
-val sec_constructor_bss : t
 val sec_has_contents : t
 val sec_never_load : t
 val sec_coff_shared_library : t

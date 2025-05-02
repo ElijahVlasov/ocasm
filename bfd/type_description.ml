@@ -116,4 +116,37 @@ module Types (F : TYPE) = struct
   type asection = asectionm Ctypes.structure
 
   let asection : asection structure typ = structure "asection"
+  let sec_no_flags = constant "SEC_NO_FLAGS" int32_t
+  let sec_alloc = constant "SEC_ALLOC" int32_t
+  let sec_load = constant "SEC_LOAD" int32_t
+  let sec_reloc = constant "SEC_RELOC" int32_t
+  let sec_readonly = constant "SEC_READONLY" int32_t
+  let sec_code = constant "SEC_CODE" int32_t
+  let sec_data = constant "SEC_DATA" int32_t
+  let sec_rom = constant "SEC_ROM" int32_t
+  let sec_constructor = constant "SEC_CONSTRUCTOR" int32_t
+  let sec_has_contents = constant "SEC_HAS_CONTENTS" int32_t
+  let sec_never_load = constant "SEC_NEVER_LOAD" int32_t
+  let sec_coff_shared_library = constant "SEC_COFF_SHARED_LIBRARY" int32_t
+  let sec_is_common = constant "SEC_IS_COMMON" int32_t
+  let sec_debugging = constant "SEC_DEBUGGING" int32_t
+  let sec_in_memory = constant "SEC_IN_MEMORY" int32_t
+  let sec_exclude = constant "SEC_EXCLUDE" int32_t
+  let sec_sort_entries = constant "SEC_SORT_ENTRIES" int32_t
+  let sec_link_once = constant "SEC_LINK_ONCE" int32_t
+  let sec_link_duplicates = constant "SEC_LINK_DUPLICATES" int32_t
+
+  let sec_link_duplicates_discard =
+    constant "SEC_LINK_DUPLICATES_DISCARD" int32_t
+
+  let sec_link_duplicates_one_only =
+    constant "SEC_LINK_DUPLICATES_ONE_ONLY" int32_t
+
+  let sec_link_duplicates_same_size =
+    constant "SEC_LINK_DUPLICATES_SAME_SIZE" int32_t
+
+  let sec_link_duplicates_same_contents =
+    constant "SEC_LINK_DUPLICATES_SAME_CONTENTS" int32_t
+
+  let sec_linker_created = constant "SEC_LINKER_CREATED" int32_t
 end

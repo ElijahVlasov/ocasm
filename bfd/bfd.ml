@@ -18,9 +18,10 @@ let check_bfd_error (a : 'a) : 'a =
   else raise (BfdException err)
 
 let protect_bfd_error (f : unit -> 'a) : 'a =
+  let ( = ) = C.Types.equal_bfd_error_type in
+  let res = f () in
   let err = C.Functions.bfd_get_error () in
-  if C.Types.equal_bfd_error_type err C.Types.NoError then f ()
-  else raise (BfdException err)
+  if err = C.Types.NoError then res else raise (BfdException err)
 
 let close_file (bfd : bfd) =
   let _ = C.Functions.bfd_close bfd in
@@ -54,6 +55,7 @@ open BfdMonadFull
 
 let ( let* ) x f = bind x ~f
 let ( let+ ) x f = map ~f x
+let error_msg : C.Types.bfd_error_type -> string = C.Functions.bfd_errmsg
 
 let set_object_format : bool BfdMonad.t =
   let* bfd = ask in
@@ -66,13 +68,17 @@ let make_section (name : string) : asection BfdMonad.t =
 let set_section_flags (section : asection) (flags : Section_flags.t) : bool =
   C.Functions.bfd_set_section_flags section (Section_flags.to_int32 flags)
 
+let set_section_size (section : asection) (size : int64) : bool =
+  C.Functions.bfd_set_section_size section (Unsigned.Size_t.of_int64 size)
+
 let set_section_contents (section : asection) (content : 'a list)
     (file_offset : int64) (typ : 'a typ) : bool BfdMonad.t =
   let* bfd = ask in
   let count = List.length content * sizeof typ in
+  let count = Unsigned.Size_t.of_int count in
   let arr = CArray.of_list typ content in
+  print_string (Format.asprintf "\ncount%a\n" Unsigned.Size_t.pp count);
   return
     (C.Functions.bfd_set_section_contents bfd section
        (to_voidp (CArray.start arr))
-       file_offset
-       (Unsigned.Size_t.of_int count))
+       file_offset count)
