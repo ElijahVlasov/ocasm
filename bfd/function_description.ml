@@ -15,6 +15,9 @@ module Functions (F : Ctypes.FOREIGN) = struct
 
   let bfd_close = foreign "bfd_close" (ptr Types.bfd @-> returning bool)
 
+  let bfd_close_all_done =
+    foreign "bfd_close_all_done" (ptr Types.bfd @-> returning bool)
+
   let bfd_get_error =
     foreign "bfd_get_error" (void @-> returning Types.bfd_error_type)
 
