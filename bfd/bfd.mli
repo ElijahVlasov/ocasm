@@ -18,5 +18,7 @@ val make_section : string -> asection BfdMonad.t
 val set_section_flags : asection -> Section_flags.t -> bool
 val set_section_size : asection -> int64 -> bool
 
+type 'a word_type = Int32 : int32 word_type | Int64 : int64 word_type
+
 val set_section_contents :
-  asection -> 'a list -> int64 -> 'a Ctypes.typ -> bool BfdMonad.t
+  'a word_type -> asection -> 'a list -> int64 -> bool BfdMonad.t

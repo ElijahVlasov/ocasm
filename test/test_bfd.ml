@@ -16,7 +16,7 @@ let () =
     let contents = [ 0x01l; 0x02l; 0x03l ] in
     let* is_success =
       ignore @@ Bfd.set_section_flags sec Bfd__Section_flags.sec_has_contents;
-      Bfd.set_section_contents sec contents 0x00L Ctypes.int32_t
+      Bfd.set_section_contents Bfd.Int32 sec contents 0x00L
     in
     if is_success then return @@ print_string "test"
     else return @@ print_string "not so much")

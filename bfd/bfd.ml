@@ -32,6 +32,10 @@ let close_file_all_done (bfd : bfd) =
   let _ = C.Functions.bfd_close_all_done bfd in
   check_bfd_error ()
 
+let close_file_all_done_unchecked (bfd : bfd) =
+  let _ = C.Functions.bfd_close_all_done bfd in
+  ()
+
 module BfdMonadBasic : sig
   include Base.Monad.Basic
 
@@ -67,7 +71,7 @@ let with_bfd (name : string) (target : string) (f : 'a BfdMonad.t) =
   let bfd = C.Functions.bfd_openw name target in
   protect_bfd_error (fun () ->
       protect
-        ~finally:(fun () -> close_file_all_done bfd)
+        ~finally:(fun () -> close_file_all_done_unchecked bfd)
         ~f:(fun () -> BfdMonad.run f bfd))
 
 open BfdMonad
@@ -111,8 +115,16 @@ let set_section_flags (section : asection) (flags : Section_flags.t) : bool =
 let set_section_size (section : asection) (size : int64) : bool =
   C.Functions.bfd_set_section_size section (Unsigned.Size_t.of_int64 size)
 
-let set_section_contents (section : asection) (content : 'a list)
-    (file_offset : int64) (typ : 'a typ) : bool BfdMonad.t =
+type 'a word_type = Int32 : int32 word_type | Int64 : int64 word_type
+type to_ctype = CType : 'a typ * 'a list -> to_ctype
+
+let ctype_and_list_of_word_type : type a. a word_type -> a list -> to_ctype =
+ fun w l ->
+  match w with Int32 -> CType (int32_t, l) | Int64 -> CType (int64_t, l)
+
+let set_section_contents (type a) (witness : a word_type) (section : asection)
+    (content : a list) (file_offset : int64) : bool BfdMonad.t =
+  let (CType (typ, content)) = ctype_and_list_of_word_type witness content in
   let count = List.length content * sizeof typ in
   let count = Unsigned.Size_t.of_int count in
   let arr = CArray.of_list typ content in
