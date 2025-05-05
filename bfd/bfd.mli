@@ -1,7 +1,40 @@
+open Base
+
 type bfd
 type asection
 
-exception BfdException of C.Types.bfd_error_type
+module Error : sig
+  type t =
+    | NoError
+    | SystemCall
+    | InvalidTarget
+    | WrongFormat
+    | WrongObjectFormat
+    | InvalidOperation
+    | NoMemory
+    | NoSymbols
+    | NoArmap
+    | NoMoreArchivedFiles
+    | MalformedArchive
+    | MissingDso
+    | FileNotRecognized
+    | FileAmbiguouslyRecognized
+    | NoContents
+    | NonrepresentableSection
+    | NoDebugSection
+    | BadValue
+    | FileTruncated
+    | FileTooBig
+    | Sorry
+    | OnInput
+    | InvalidErrorCode
+
+  include Equal.S with type t := t
+
+  val to_string : t -> string
+end
+
+exception BfdException of Error.t
 
 module BfdMonad : sig
   type 'a t

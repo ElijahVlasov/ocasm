@@ -1,16 +1,12 @@
 open Bfd.BfdMonad
 
 let ( let* ) x f = bind x ~f
-(* let ( let+ ) x f = map ~f x *)
 
 let () =
-  (* let ( * ) = Int64.mul in *)
-  Bfd.with_bfd "lol" "elf32-littleriscv"
-  @@
-  let* is_success = Bfd.set_object_format in
-  if not is_success then return @@ print_string "not good"
-  else (
-    print_string "good";
+  try
+    Bfd.with_bfd "lol" "elf32-littleriscv"
+    @@
+    let* _ = Bfd.set_object_format in
     let* sec = Bfd.make_section ".text" in
     (* ignore @@ Bfd.set_section_size sec (3L * 4L); *)
     let contents = [ 0x01l; 0x02l; 0x03l ] in
@@ -19,4 +15,5 @@ let () =
       Bfd.set_section_contents Bfd.Int32 sec contents 0x00L
     in
     if is_success then return @@ print_string "test"
-    else return @@ print_string "not so much")
+    else return @@ print_string "not so much"
+  with Bfd.BfdException err -> print_string (Bfd.Error.to_string err)

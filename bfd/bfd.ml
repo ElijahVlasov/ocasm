@@ -1,3 +1,4 @@
+open Base
 open Base.Exn
 open Ctypes
 module Types = Types_generated
@@ -11,18 +12,60 @@ let _ =
 type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
 
-exception BfdException of C.Types.bfd_error_type
+type error =
+  | NoError
+  | SystemCall
+  | InvalidTarget
+  | WrongFormat
+  | WrongObjectFormat
+  | InvalidOperation
+  | NoMemory
+  | NoSymbols
+  | NoArmap
+  | NoMoreArchivedFiles
+  | MalformedArchive
+  | MissingDso
+  | FileNotRecognized
+  | FileAmbiguouslyRecognized
+  | NoContents
+  | NonrepresentableSection
+  | NoDebugSection
+  | BadValue
+  | FileTruncated
+  | FileTooBig
+  | Sorry
+  | OnInput
+  | InvalidErrorCode
+[@@deriving eq]
 
-let check_bfd_error (a : 'a) : 'a =
-  let ( = ) = C.Types.equal_bfd_error_type in
-  let err = C.Functions.bfd_get_error () in
-  if err = C.Types.NoError then a else raise (BfdException err)
+module Error : sig
+  type t = error
+
+  include Equal.S with type t := t
+
+  val to_string : t -> string
+  val get_error : unit -> t
+  val no_error : t -> bool
+end = struct
+  type t = error
+
+  include C.Types
+
+  let equal = equal_error
+  let to_string = C.Functions.bfd_errmsg
+  let get_error = C.Functions.bfd_get_error
+  let no_error = C.Types.equal_bfd_error_type C.Types.NoError
+end
+
+exception BfdException of Error.t
 
 let protect_bfd_error (f : unit -> 'a) : 'a =
-  let ( = ) = C.Types.equal_bfd_error_type in
+  let open Error in
   let res = f () in
-  let err = C.Functions.bfd_get_error () in
-  if err = C.Types.NoError then res else raise (BfdException err)
+  let err = get_error () in
+  if no_error err then res else raise (BfdException err)
+
+let check_bfd_error (a : 'a) : 'a = protect_bfd_error (fun () -> a)
 
 let close_file (bfd : bfd) =
   let _ = C.Functions.bfd_close bfd in
@@ -48,7 +91,7 @@ end = struct
   let return a _ = a
   let map = `Custom (fun a ~f bfd -> f (a bfd))
   let run a bfd = a bfd
-  let ask = Fun.id
+  let ask = Fn.id
 end
 
 module BfdMonad : sig
@@ -69,16 +112,13 @@ end
 
 let with_bfd (name : string) (target : string) (f : 'a BfdMonad.t) =
   let bfd = C.Functions.bfd_openw name target in
-  protect_bfd_error (fun () ->
-      protect
-        ~finally:(fun () -> close_file_all_done_unchecked bfd)
-        ~f:(fun () -> BfdMonad.run f bfd))
+  protect
+    ~finally:(fun () -> close_file_all_done_unchecked bfd)
+    ~f:(fun () -> BfdMonad.run f bfd)
 
 open BfdMonad
 
 let ( let* ) x f = bind x ~f
-let ( let+ ) x f = map ~f x
-let error_msg : C.Types.bfd_error_type -> string = C.Functions.bfd_errmsg
 
 let bfd_func_wrapper_1 (f : bfd -> 'a -> 'b) (a : 'a) : 'b BfdMonad.t =
   let* bfd = ask in
@@ -115,6 +155,9 @@ let set_section_flags (section : asection) (flags : Section_flags.t) : bool =
 let set_section_size (section : asection) (size : int64) : bool =
   C.Functions.bfd_set_section_size section (Unsigned.Size_t.of_int64 size)
 
+let set_section_contents_raw =
+  bfd_func_wrapper_4 C.Functions.bfd_set_section_contents
+
 type 'a word_type = Int32 : int32 word_type | Int64 : int64 word_type
 type to_ctype = CType : 'a typ * 'a list -> to_ctype
 
@@ -128,6 +171,6 @@ let set_section_contents (type a) (witness : a word_type) (section : asection)
   let count = List.length content * sizeof typ in
   let count = Unsigned.Size_t.of_int count in
   let arr = CArray.of_list typ content in
-  bfd_func_wrapper_4 C.Functions.bfd_set_section_contents section
+  set_section_contents_raw section
     (to_voidp (CArray.start arr))
     file_offset count

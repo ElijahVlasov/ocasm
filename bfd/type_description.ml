@@ -56,31 +56,7 @@ module Types (F : TYPE) = struct
   let bfd_error_invalid_error_code =
     constant "bfd_error_invalid_error_code" int64_t
 
-  type bfd_error_type =
-    | NoError
-    | SystemCall
-    | InvalidTarget
-    | WrongFormat
-    | WrongObjectFormat
-    | InvalidOperation
-    | NoMemory
-    | NoSymbols
-    | NoArmap
-    | NoMoreArchivedFiles
-    | MalformedArchive
-    | MissingDso
-    | FileNotRecognized
-    | FileAmbiguouslyRecognized
-    | NoContents
-    | NonrepresentableSection
-    | NoDebugSection
-    | BadValue
-    | FileTruncated
-    | FileTooBig
-    | Sorry
-    | OnInput
-    | InvalidErrorCode
-  [@@deriving eq, show]
+  type bfd_error_type = Error.error
 
   let bfd_error_type =
     enum "bfd_error"
