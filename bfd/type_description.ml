@@ -56,34 +56,60 @@ module Types (F : TYPE) = struct
   let bfd_error_invalid_error_code =
     constant "bfd_error_invalid_error_code" int64_t
 
-  type bfd_error_type = Error.error
+  module Error = struct
+    type t =
+      | NoError
+      | SystemCall
+      | InvalidTarget
+      | WrongFormat
+      | WrongObjectFormat
+      | InvalidOperation
+      | NoMemory
+      | NoSymbols
+      | NoArmap
+      | NoMoreArchivedFiles
+      | MalformedArchive
+      | MissingDso
+      | FileNotRecognized
+      | FileAmbiguouslyRecognized
+      | NoContents
+      | NonrepresentableSection
+      | NoDebugSection
+      | BadValue
+      | FileTruncated
+      | FileTooBig
+      | Sorry
+      | OnInput
+      | InvalidErrorCode
+    [@@deriving eq]
+  end
 
   let bfd_error_type =
     enum "bfd_error"
       [
-        (NoError, bfd_error_no_error);
-        (SystemCall, bfd_error_system_call);
-        (InvalidTarget, bfd_error_invalid_target);
-        (WrongFormat, bfd_error_wrong_format);
-        (WrongObjectFormat, bfd_error_wrong_object_format);
-        (InvalidOperation, bfd_error_invalid_operation);
-        (NoMemory, bfd_error_no_memory);
-        (NoSymbols, bfd_error_no_symbols);
-        (NoArmap, bfd_error_no_armap);
-        (NoMoreArchivedFiles, bfd_error_no_more_archived_files);
-        (MalformedArchive, bfd_error_malformed_archive);
-        (MissingDso, bfd_error_missing_dso);
-        (FileNotRecognized, bfd_error_file_not_recognized);
-        (FileAmbiguouslyRecognized, bfd_error_file_ambiguously_recognized);
-        (NoContents, bfd_error_no_contents);
-        (NonrepresentableSection, bfd_error_nonrepresentable_section);
-        (NoDebugSection, bfd_error_no_debug_section);
-        (BadValue, bfd_error_bad_value);
-        (FileTruncated, bfd_error_file_truncated);
-        (FileTooBig, bfd_error_file_too_big);
-        (Sorry, bfd_error_sorry);
-        (OnInput, bfd_error_on_input);
-        (InvalidErrorCode, bfd_error_invalid_error_code);
+        (Error.NoError, bfd_error_no_error);
+        (Error.SystemCall, bfd_error_system_call);
+        (Error.InvalidTarget, bfd_error_invalid_target);
+        (Error.WrongFormat, bfd_error_wrong_format);
+        (Error.WrongObjectFormat, bfd_error_wrong_object_format);
+        (Error.InvalidOperation, bfd_error_invalid_operation);
+        (Error.NoMemory, bfd_error_no_memory);
+        (Error.NoSymbols, bfd_error_no_symbols);
+        (Error.NoArmap, bfd_error_no_armap);
+        (Error.NoMoreArchivedFiles, bfd_error_no_more_archived_files);
+        (Error.MalformedArchive, bfd_error_malformed_archive);
+        (Error.MissingDso, bfd_error_missing_dso);
+        (Error.FileNotRecognized, bfd_error_file_not_recognized);
+        (Error.FileAmbiguouslyRecognized, bfd_error_file_ambiguously_recognized);
+        (Error.NoContents, bfd_error_no_contents);
+        (Error.NonrepresentableSection, bfd_error_nonrepresentable_section);
+        (Error.NoDebugSection, bfd_error_no_debug_section);
+        (Error.BadValue, bfd_error_bad_value);
+        (Error.FileTruncated, bfd_error_file_truncated);
+        (Error.FileTooBig, bfd_error_file_too_big);
+        (Error.Sorry, bfd_error_sorry);
+        (Error.OnInput, bfd_error_on_input);
+        (Error.InvalidErrorCode, bfd_error_invalid_error_code);
       ]
 
   let bfd_object = constant "bfd_object" int64_t

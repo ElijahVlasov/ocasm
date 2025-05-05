@@ -12,49 +12,12 @@ let _ =
 type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
 
-type error =
-  | NoError
-  | SystemCall
-  | InvalidTarget
-  | WrongFormat
-  | WrongObjectFormat
-  | InvalidOperation
-  | NoMemory
-  | NoSymbols
-  | NoArmap
-  | NoMoreArchivedFiles
-  | MalformedArchive
-  | MissingDso
-  | FileNotRecognized
-  | FileAmbiguouslyRecognized
-  | NoContents
-  | NonrepresentableSection
-  | NoDebugSection
-  | BadValue
-  | FileTruncated
-  | FileTooBig
-  | Sorry
-  | OnInput
-  | InvalidErrorCode
-[@@deriving eq]
+module Error = struct
+  include C.Types.Error
 
-module Error : sig
-  type t = error
-
-  include Equal.S with type t := t
-
-  val to_string : t -> string
-  val get_error : unit -> t
-  val no_error : t -> bool
-end = struct
-  type t = error
-
-  include C.Types
-
-  let equal = equal_error
   let to_string = C.Functions.bfd_errmsg
   let get_error = C.Functions.bfd_get_error
-  let no_error = C.Types.equal_bfd_error_type C.Types.NoError
+  let no_error = equal C.Types.Error.NoError
 end
 
 exception BfdException of Error.t
