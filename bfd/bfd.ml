@@ -12,6 +12,8 @@ let _ =
 type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
 
+module Section_flags = Section_flags
+
 module Error = struct
   include C.Types.Error
 
@@ -22,13 +24,10 @@ end
 
 exception BfdException of Error.t
 
-let protect_bfd_error (f : unit -> 'a) : 'a =
+let check_bfd_error (a : 'a) : 'a =
   let open Error in
-  let res = f () in
   let err = get_error () in
-  if no_error err then res else raise (BfdException err)
-
-let check_bfd_error (a : 'a) : 'a = protect_bfd_error (fun () -> a)
+  if no_error err then a else raise (BfdException err)
 
 let close_file (bfd : bfd) =
   let _ = C.Functions.bfd_close bfd in
@@ -106,34 +105,42 @@ let bfd_func_wrapper_4 (f : bfd -> 'a -> 'b -> 'c -> 'd -> 'e) (a : 'a) (b : 'b)
   let result = f bfd a b c d in
   return @@ check_bfd_error result
 
-let set_object_format : bool BfdMonad.t =
-  bfd_func_wrapper_1 C.Functions.bfd_set_format C.Types.bfd_object
+let bfd_pure_wrapper_2 (f : 'a -> 'b -> 'c) (a : 'a) (b : 'b) : 'c =
+  check_bfd_error (f a b)
+
+let set_object_format : unit BfdMonad.t =
+  ignore_m @@ bfd_func_wrapper_1 C.Functions.bfd_set_format C.Types.bfd_object
 
 let make_section : string -> asection BfdMonad.t =
   bfd_func_wrapper_1 C.Functions.bfd_make_section
 
-let set_section_flags (section : asection) (flags : Section_flags.t) : bool =
-  C.Functions.bfd_set_section_flags section (Section_flags.to_int32 flags)
+let set_section_flags (section : asection) (flags : Section_flags.t) : unit =
+  ignore
+  @@ bfd_pure_wrapper_2 C.Functions.bfd_set_section_flags section
+       (Section_flags.to_int32 flags)
 
-let set_section_size (section : asection) (size : int64) : bool =
-  C.Functions.bfd_set_section_size section (Unsigned.Size_t.of_int64 size)
+let set_section_size (section : asection) (size : int64) : unit =
+  ignore
+  @@ bfd_pure_wrapper_2 C.Functions.bfd_set_section_size section
+       (Unsigned.Size_t.of_int64 size)
 
 let set_section_contents_raw =
   bfd_func_wrapper_4 C.Functions.bfd_set_section_contents
 
-type 'a word_type = Int32 : int32 word_type | Int64 : int64 word_type
+type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
 type to_ctype = CType : 'a typ * 'a list -> to_ctype
 
 let ctype_and_list_of_word_type : type a. a word_type -> a list -> to_ctype =
  fun w l ->
-  match w with Int32 -> CType (int32_t, l) | Int64 -> CType (int64_t, l)
+  match w with Word32 -> CType (int32_t, l) | Word64 -> CType (int64_t, l)
 
 let set_section_contents (type a) (witness : a word_type) (section : asection)
-    (content : a list) (file_offset : int64) : bool BfdMonad.t =
+    (content : a list) (file_offset : int64) : unit BfdMonad.t =
   let (CType (typ, content)) = ctype_and_list_of_word_type witness content in
   let count = List.length content * sizeof typ in
   let count = Unsigned.Size_t.of_int count in
   let arr = CArray.of_list typ content in
-  set_section_contents_raw section
-    (to_voidp (CArray.start arr))
-    file_offset count
+  ignore_m
+  @@ set_section_contents_raw section
+       (to_voidp (CArray.start arr))
+       file_offset count

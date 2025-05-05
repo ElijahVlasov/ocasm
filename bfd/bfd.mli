@@ -36,6 +36,8 @@ end
 
 exception BfdException of Error.t
 
+module Section_flags = Section_flags
+
 module BfdMonad : sig
   type 'a t
 
@@ -46,12 +48,12 @@ module BfdMonad : sig
 end
 
 val with_bfd : string -> string -> 'a BfdMonad.t -> 'a
-val set_object_format : bool BfdMonad.t
+val set_object_format : unit BfdMonad.t
 val make_section : string -> asection BfdMonad.t
-val set_section_flags : asection -> Section_flags.t -> bool
-val set_section_size : asection -> int64 -> bool
+val set_section_flags : asection -> Section_flags.t -> unit
+val set_section_size : asection -> int64 -> unit
 
-type 'a word_type = Int32 : int32 word_type | Int64 : int64 word_type
+type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
 
 val set_section_contents :
-  'a word_type -> asection -> 'a list -> int64 -> bool BfdMonad.t
+  'a word_type -> asection -> 'a list -> int64 -> unit BfdMonad.t

@@ -8,12 +8,8 @@ let () =
     @@
     let* _ = Bfd.set_object_format in
     let* sec = Bfd.make_section ".text" in
-    (* ignore @@ Bfd.set_section_size sec (3L * 4L); *)
     let contents = [ 0x01l; 0x02l; 0x03l ] in
-    let* is_success =
-      ignore @@ Bfd.set_section_flags sec Bfd__Section_flags.sec_has_contents;
-      Bfd.set_section_contents Bfd.Int32 sec contents 0x00L
-    in
-    if is_success then return @@ print_string "test"
-    else return @@ print_string "not so much"
+    Bfd.set_section_flags sec Bfd.Section_flags.sec_has_contents;
+    let* _x = Bfd.set_section_contents Bfd.Word32 sec contents 0x00L in
+    return ()
   with Bfd.BfdException err -> print_string (Bfd.Error.to_string err)
