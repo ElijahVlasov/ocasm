@@ -2,6 +2,7 @@ open Base
 
 type bfd
 type asection
+type asymbol
 
 module Error : sig
   type t =
@@ -57,3 +58,6 @@ type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
 
 val set_section_contents :
   'a word_type -> asection -> 'a list -> int64 -> unit BfdMonad.t
+
+val make_empty_symbol : asymbol BfdMonad.t
+val set_symtab : asymbol list -> unit BfdMonad.t

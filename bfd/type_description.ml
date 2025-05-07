@@ -151,4 +151,39 @@ module Types (F : TYPE) = struct
     constant "SEC_LINK_DUPLICATES_SAME_CONTENTS" int32_t
 
   let sec_linker_created = constant "SEC_LINKER_CREATED" int32_t
+
+  type asymbolm
+  type asymbol = asymbolm Ctypes.structure
+
+  let asymbol : asymbol structure typ = structure "bfd_symbol"
+  let asym_name = field asymbol "name" string
+  let asym_section = field asymbol "section" (ptr asection)
+  let asym_flags = field asymbol "flags" int32_t
+  let asym_value = field asymbol "value" int64_t
+  let bsf_no_flags = constant "BSF_NO_FLAGS" int32_t
+  let bsf_local = constant "BSF_LOCAL" int32_t
+  let bsf_global = constant "BSF_GLOBAL" int32_t
+  let bsf_export = constant "BSF_EXPORT" int32_t
+  let bsf_debugging = constant "BSF_DEBUGGING" int32_t
+  let bsf_function = constant "BSF_FUNCTION" int32_t
+  let bsf_keep = constant "BSF_KEEP" int32_t
+  let bsf_elf_common = constant "BSF_ELF_COMMON" int32_t
+  let bsf_weak = constant "BSF_WEAK" int32_t
+  let bsf_section_sym = constant "BSF_SECTION_SYM" int32_t
+  let bsf_old_common = constant "BSF_OLD_COMMON" int32_t
+  let bsf_not_at_end = constant "BSF_NOT_AT_END" int32_t
+  let bsf_constructor = constant "BSF_CONSTRUCTOR" int32_t
+  let bsf_warning = constant "BSF_WARNING" int32_t
+  let bsf_indirect = constant "BSF_INDIRECT" int32_t
+  let bsf_file = constant "BSF_FILE" int32_t
+  let bsf_dynamic = constant "BSF_DYNAMIC" int32_t
+  let bsf_object = constant "BSF_OBJECT" int32_t
+  let bsf_debugging_reloc = constant "BSF_DEBUGGING_RELOC" int32_t
+  let bsf_thread_local = constant "BSF_THREAD_LOCAL" int32_t
+  let bsf_relc = constant "BSF_RELC" int32_t
+  let bsf_srelc = constant "BSF_SRELC" int32_t
+  let bsf_synthetic = constant "BSF_SYNTHETIC" int32_t
+  let bsf_gnu_indirect_function = constant "BSF_GNU_INDIRECT_FUNCTION" int32_t
+  let bsf_gnu_unique = constant "BSF_GNU_UNIQUE" int32_t
+  let bsf_section_sym_used = constant "BSF_SECTION_SYM_USED" int32_t
 end

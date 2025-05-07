@@ -11,6 +11,7 @@ let _ =
 
 type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
+type asymbol = C.Types.asymbol structure ptr
 
 module Section_flags = Section_flags
 
@@ -82,6 +83,11 @@ open BfdMonad
 
 let ( let* ) x f = bind x ~f
 
+let bfd_func_wrapper_0 (f : bfd -> 'a) : 'a BfdMonad.t =
+  let* bfd = ask in
+  let result = f bfd in
+  return @@ check_bfd_error result
+
 let bfd_func_wrapper_1 (f : bfd -> 'a -> 'b) (a : 'a) : 'b BfdMonad.t =
   let* bfd = ask in
   let result = f bfd a in
@@ -144,3 +150,12 @@ let set_section_contents (type a) (witness : a word_type) (section : asection)
   @@ set_section_contents_raw section
        (to_voidp (CArray.start arr))
        file_offset count
+
+let make_empty_symbol = bfd_func_wrapper_0 C.Functions.bfd_make_empty_symbol
+let set_symtab_raw = bfd_func_wrapper_2 C.Functions.bfd_set_symtab
+
+let set_symtab (syms : asymbol list) : unit BfdMonad.t =
+  let len = List.length syms |> Unsigned.Size_t.of_int in
+  let syms = List.append syms [ from_voidp C.Types.asymbol null ] in
+  let arr = CArray.of_list (ptr C.Types.asymbol) syms in
+  ignore_m @@ set_symtab_raw (CArray.start arr) len
