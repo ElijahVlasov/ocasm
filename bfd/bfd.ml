@@ -14,6 +14,7 @@ type asection = C.Types.asection structure ptr
 type asymbol = C.Types.asymbol structure ptr
 
 module Section_flags = Section_flags
+module Symbol_flags = Symbol_flags
 
 module Error = struct
   include C.Types.Error
@@ -152,6 +153,16 @@ let set_section_contents (type a) (witness : a word_type) (section : asection)
        file_offset count
 
 let make_empty_symbol = bfd_func_wrapper_0 C.Functions.bfd_make_empty_symbol
+
+let make_symbol (name : string) (sec : asection) (flags : Symbol_flags.t)
+    (value : int64) : asymbol BfdMonad.t =
+  let* sym = make_empty_symbol in
+  setf !@sym C.Types.asym_name name;
+  setf !@sym C.Types.asym_section sec;
+  setf !@sym C.Types.asym_flags (Symbol_flags.to_int32 flags);
+  setf !@sym C.Types.asym_value value;
+  return @@ sym
+
 let set_symtab_raw = bfd_func_wrapper_2 C.Functions.bfd_set_symtab
 
 let set_symtab (syms : asymbol list) : unit BfdMonad.t =

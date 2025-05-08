@@ -160,6 +160,7 @@ module Types (F : TYPE) = struct
   let asym_section = field asymbol "section" (ptr asection)
   let asym_flags = field asymbol "flags" int32_t
   let asym_value = field asymbol "value" int64_t
+  let () = seal asymbol
   let bsf_no_flags = constant "BSF_NO_FLAGS" int32_t
   let bsf_local = constant "BSF_LOCAL" int32_t
   let bsf_global = constant "BSF_GLOBAL" int32_t

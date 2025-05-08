@@ -9,7 +9,9 @@ let () =
     let* _ = Bfd.set_object_format in
     let* sec = Bfd.make_section ".text" in
     let contents = [ 0x01l; 0x02l; 0x03l ] in
+    let* sym = Bfd.make_symbol "dummy" sec Bfd.Symbol_flags.bsf_global 0x123L in
     Bfd.set_section_flags sec Bfd.Section_flags.sec_has_contents;
     let* _x = Bfd.set_section_contents Bfd.Word32 sec contents 0x00L in
-    return ()
+    let symtable = [ sym ] in
+    Bfd.set_symtab symtable
   with Bfd.BfdException err -> print_string (Bfd.Error.to_string err)
