@@ -78,11 +78,11 @@ end = struct
   let ask = BfdMonadBasic.ask
 end
 
-let with_bfd (name : string) (target : string) (f : 'a BfdMonad.t) =
-  let bfd = C.Functions.bfd_openw name target in
+let with_bfd ~file_name ~target comp =
+  let bfd = C.Functions.bfd_openw file_name target in
   protect
     ~finally:(fun () -> close_file_unchecked bfd)
-    ~f:(fun () -> BfdMonad.run f bfd)
+    ~f:(fun () -> BfdMonad.run comp bfd)
 
 open BfdMonad
 
@@ -145,14 +145,16 @@ let ctype_and_list_of_word_type : type a. a word_type -> a list -> to_ctype =
  fun w l ->
   match w with Word32 -> CType (int32_t, l) | Word64 -> CType (int64_t, l)
 
-let set_section_contents (type a) (witness : a word_type) (section : asection)
-    (content : a list) (file_offset : int64) : unit BfdMonad.t =
-  let (CType (typ, content)) = ctype_and_list_of_word_type witness content in
+let set_section_contents content_word ~sec ~content ~file_offset :
+    unit BfdMonad.t =
+  let (CType (typ, content)) =
+    ctype_and_list_of_word_type content_word content
+  in
   let count = List.length content * sizeof typ in
   let count = Unsigned.Size_t.of_int count in
   let arr = CArray.of_list typ content in
   ignore_m
-  @@ set_section_contents_raw section
+  @@ set_section_contents_raw sec
        (to_voidp (CArray.start arr))
        file_offset count
 
@@ -165,8 +167,7 @@ let make_empty_symbol =
        (Foreign.funptr (ptr C.Types.bfd @-> returning (ptr C.Types.asymbol)))
        make_empty_symbol_ptr bfd
 
-let make_symbol (name : string) (sec : asection) (flags : Symbol_flags.t)
-    (value : int64) : asymbol BfdMonad.t =
+let make_symbol ~name ~sec ~flags ~value : asymbol BfdMonad.t =
   let* sym = make_empty_symbol in
   setf !@sym C.Types.asym_name name;
   setf !@sym C.Types.asym_section sec;

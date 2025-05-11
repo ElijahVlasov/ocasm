@@ -49,7 +49,7 @@ module BfdMonad : sig
   val ask : bfd t
 end
 
-val with_bfd : string -> string -> 'a BfdMonad.t -> 'a
+val with_bfd : file_name:string -> target:string -> 'a BfdMonad.t -> 'a
 val set_object_format : unit BfdMonad.t
 val make_section : string -> asection BfdMonad.t
 val set_section_flags : asection -> Section_flags.t -> unit
@@ -58,9 +58,17 @@ val set_section_size : asection -> int64 -> unit
 type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
 
 val set_section_contents :
-  'a word_type -> asection -> 'a list -> int64 -> unit BfdMonad.t
+  'a word_type ->
+  sec:asection ->
+  content:'a list ->
+  file_offset:int64 ->
+  unit BfdMonad.t
 
 val make_symbol :
-  string -> asection -> Symbol_flags.t -> int64 -> asymbol BfdMonad.t
+  name:string ->
+  sec:asection ->
+  flags:Symbol_flags.t ->
+  value:int64 ->
+  asymbol BfdMonad.t
 
 val set_symtab : asymbol list -> unit BfdMonad.t
