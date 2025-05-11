@@ -187,4 +187,19 @@ module Types (F : TYPE) = struct
   let bsf_gnu_indirect_function = constant "BSF_GNU_INDIRECT_FUNCTION" int32_t
   let bsf_gnu_unique = constant "BSF_GNU_UNIQUE" int32_t
   let bsf_section_sym_used = constant "BSF_SECTION_SYM_USED" int32_t
+
+  type bfd_targetm
+  type bfd_target = bfd_targetm Ctypes.structure
+
+  let bfd_target : bfd_target structure typ = structure "bfd_target"
+
+  let bfd_make_empty_symbol_t =
+    static_funptr (ptr bfd @-> returning (ptr asymbol))
+
+  let bfd_make_empty_symbol =
+    field bfd_target "_bfd_make_empty_symbol" bfd_make_empty_symbol_t
+
+  let xvec = field bfd "xvec" (ptr bfd_target)
+  let () = seal bfd_target
+  let () = seal bfd
 end

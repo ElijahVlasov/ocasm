@@ -46,10 +46,6 @@ module Functions (F : Ctypes.FOREIGN) = struct
     foreign "bfd_set_section_size"
       (ptr Types.asection @-> size_t @-> returning bool)
 
-  let bfd_make_empty_symbol =
-    foreign "_bfd_generic_make_empty_symbol"
-      (ptr Types.bfd @-> returning (ptr Types.asymbol))
-
   let bfd_set_symtab =
     foreign "bfd_set_symtab"
       (ptr Types.bfd @-> ptr (ptr Types.asymbol) @-> size_t @-> returning bool)

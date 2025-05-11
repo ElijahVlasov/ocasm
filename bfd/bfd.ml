@@ -35,6 +35,10 @@ let close_file (bfd : bfd) =
   let _ = C.Functions.bfd_close bfd in
   check_bfd_error ()
 
+let close_file_unchecked (bfd : bfd) =
+  let _ = C.Functions.bfd_close bfd in
+  ()
+
 let close_file_all_done (bfd : bfd) =
   let _ = C.Functions.bfd_close_all_done bfd in
   check_bfd_error ()
@@ -77,7 +81,7 @@ end
 let with_bfd (name : string) (target : string) (f : 'a BfdMonad.t) =
   let bfd = C.Functions.bfd_openw name target in
   protect
-    ~finally:(fun () -> close_file_all_done_unchecked bfd)
+    ~finally:(fun () -> close_file_unchecked bfd)
     ~f:(fun () -> BfdMonad.run f bfd)
 
 open BfdMonad
@@ -152,7 +156,14 @@ let set_section_contents (type a) (witness : a word_type) (section : asection)
        (to_voidp (CArray.start arr))
        file_offset count
 
-let make_empty_symbol = bfd_func_wrapper_0 C.Functions.bfd_make_empty_symbol
+let make_empty_symbol =
+  let* bfd = ask in
+  let target = getf !@bfd C.Types.xvec in
+  let make_empty_symbol_ptr = getf !@target C.Types.bfd_make_empty_symbol in
+  return
+  @@ coerce C.Types.bfd_make_empty_symbol_t
+       (Foreign.funptr (ptr C.Types.bfd @-> returning (ptr C.Types.asymbol)))
+       make_empty_symbol_ptr bfd
 
 let make_symbol (name : string) (sec : asection) (flags : Symbol_flags.t)
     (value : int64) : asymbol BfdMonad.t =
