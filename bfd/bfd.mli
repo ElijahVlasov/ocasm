@@ -72,3 +72,8 @@ val make_symbol :
   asymbol BfdMonad.t
 
 val set_symtab : asymbol list -> unit BfdMonad.t
+(** [set_symtab syms] sets the symbol table for the bfd instance.
+
+    Note: it's not possible to set the symbol table once the output has begun
+    (e.g. [set_section_contents] initiates output). If it gets out of hand
+    having an indexed monad would be nice. *)
