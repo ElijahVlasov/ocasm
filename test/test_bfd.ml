@@ -18,5 +18,5 @@ let () =
     Bfd.set_section_flags sec Bfd.Section_flags.sec_has_contents;
     let symtable = [ sym ] in
     let* _x = Bfd.set_symtab symtable in
-    Bfd.set_section_contents Bfd.Word32 ~sec ~content ~file_offset:0x00L
+    Bfd.set_section_contents Bfd.CArray.Word32 ~sec ~content ~file_offset:0x00L
   with Bfd.BfdException err -> print_string (Bfd.Error.to_string err)

@@ -1,7 +1,6 @@
 open Base
 open Base.Exn
 open Ctypes
-module Types = Types_generated
 
 let _ =
   let ( = ) = Unsigned.Size_t.equal in
@@ -13,6 +12,7 @@ type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
 type asymbol = C.Types.asymbol structure ptr
 
+module CArray = Carray
 module Section_flags = Section_flags
 module Symbol_flags = Symbol_flags
 
@@ -138,21 +138,12 @@ let set_section_size (section : asection) (size : int64) : unit =
 let set_section_contents_raw =
   bfd_func_wrapper_4 C.Functions.bfd_set_section_contents
 
-type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
-type to_ctype = CType : 'a typ * 'a list -> to_ctype
-
-let ctype_and_list_of_word_type : type a. a word_type -> a list -> to_ctype =
- fun w l ->
-  match w with Word32 -> CType (int32_t, l) | Word64 -> CType (int64_t, l)
-
-let set_section_contents content_word ~sec ~content ~file_offset :
-    unit BfdMonad.t =
-  let (CType (typ, content)) =
-    ctype_and_list_of_word_type content_word content
-  in
+let set_section_contents word_type ~sec ~content ~file_offset : unit BfdMonad.t
+    =
+  let typ = CArray.WordType.to_typ word_type in
   let count = List.length content * sizeof typ in
   let count = Unsigned.Size_t.of_int count in
-  let arr = CArray.of_list typ content in
+  let arr = CArray.of_list word_type content in
   ignore_m
   @@ set_section_contents_raw sec
        (to_voidp (CArray.start arr))
@@ -178,6 +169,7 @@ let make_symbol ~name ~sec ~flags ~value : asymbol BfdMonad.t =
 let set_symtab_raw = bfd_func_wrapper_2 C.Functions.bfd_set_symtab
 
 let set_symtab (syms : asymbol list) : unit BfdMonad.t =
+  let module CArray = Ctypes.CArray in
   let len = List.length syms |> Unsigned.Size_t.of_int in
   let syms = List.append syms [ from_voidp C.Types.asymbol null ] in
   let arr = CArray.of_list (ptr C.Types.asymbol) syms in

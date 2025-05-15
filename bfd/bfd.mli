@@ -37,6 +37,13 @@ end
 
 exception BfdException of Error.t
 
+module CArray : sig
+  type 'a carray
+  type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
+
+  val of_list : 'a word_type -> 'a list -> 'a carray
+end
+
 module Section_flags = Section_flags
 module Symbol_flags = Symbol_flags
 
@@ -55,10 +62,8 @@ val make_section : string -> asection BfdMonad.t
 val set_section_flags : asection -> Section_flags.t -> unit
 val set_section_size : asection -> int64 -> unit
 
-type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
-
 val set_section_contents :
-  'a word_type ->
+  'a CArray.word_type ->
   sec:asection ->
   content:'a list ->
   file_offset:int64 ->
