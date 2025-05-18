@@ -42,6 +42,8 @@ module CArray : sig
   type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
 
   val of_list : 'a word_type -> 'a list -> 'a carray
+  val sizeof : 'a word_type -> int
+  val sizeof_list : 'a word_type -> 'a list -> int
 end
 
 module Section_flags = Section_flags

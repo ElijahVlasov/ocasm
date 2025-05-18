@@ -10,4 +10,6 @@ module WordType : sig
 end
 
 val of_list : 'a word_type -> 'a list -> 'a carray
+val sizeof : 'a word_type -> int
+val sizeof_list : 'a word_type -> 'a list -> int
 val start : 'a carray -> 'a ptr

@@ -16,14 +16,17 @@
  (authors "Ilia Vlasov <elijah.vlasov@gmail.com>")
  (license MIT)
  (depends
+  alcotest
   ctypes
   ctypes-foreign
+  getopt
+  menhir
   (ocaml (>= 5.3.0))
   ocamlformat
   ppx_deriving
-  alcotest
-  menhir
-  getopt)
+  ppx_deriving_hash
+  ppx_sexp_conv
+  )
  (tags
   ("riscv" "assembler" "assembly"))
   (source

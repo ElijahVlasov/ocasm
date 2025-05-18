@@ -11,14 +11,16 @@ homepage: "https://github.com/ElijahVlasov/ocasm"
 bug-reports: "https://github.com/ElijahVlasov/ocasm/issues"
 depends: [
   "dune" {>= "3.18"}
+  "alcotest"
   "ctypes"
   "ctypes-foreign"
+  "getopt"
+  "menhir"
   "ocaml" {>= "5.3.0"}
   "ocamlformat"
   "ppx_deriving"
-  "alcotest"
-  "menhir"
-  "getopt"
+  "ppx_deriving_hash"
+  "ppx_sexp_conv"
   "odoc" {with-doc}
 ]
 build: [
