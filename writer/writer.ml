@@ -42,7 +42,7 @@ let init_sections : type a.
   @@ all
   @@
   let mk_sec_info (section, contents) =
-    let size = Int64.of_int @@ sizeof_list word_type contents in
+    let size = Int64.of_int @@ WordType.sizeof_list word_type contents in
     let* bfd_sec = Bfd.make_section (Section.to_string section) in
     let flags = section_flags section in
     Bfd.set_section_flags bfd_sec flags;
@@ -52,14 +52,18 @@ let init_sections : type a.
   List.map sections ~f:mk_sec_info
 
 let set_symtab : type a.
-    (Section.t, a section_info) Hashtbl.t -> a symbol list -> unit t =
- fun sections symtab ->
+    a word_type ->
+    (Section.t, a section_info) Hashtbl.t ->
+    a symbol list ->
+    unit t =
+ fun word_type sections symtab ->
   let* symtab =
     all
     @@
     let mk_symbol ({ section; name; value; flags } : a symbol) =
       let sec = (Hashtbl.find_exn sections section).bfd_sec in
-      Bfd.make_symbol ~sec ~name ~flags ~value
+      Bfd.make_symbol ~sec ~name ~flags
+        ~value:(WordType.word_to_int64 word_type value)
     in
     List.map ~f:mk_symbol symtab
   in
@@ -76,7 +80,8 @@ let write_section_contents : type a.
     ~f:(fun (_, sec_info) ->
       let file_offset = !offset in
       offset :=
-        file_offset + Int64.of_int (sizeof_list word_type sec_info.contents);
+        file_offset
+        + Int64.of_int (WordType.sizeof_list word_type sec_info.contents);
       Bfd.set_section_contents word_type ~sec:sec_info.bfd_sec
         ~content:sec_info.contents ~file_offset)
     (Hashtbl.to_alist sections)
@@ -88,5 +93,5 @@ let write_object_file ~(word_type : 'a word_type) ~(name : string)
   @@
   let* _ = Bfd.set_object_format in
   let* sections = init_sections word_type sections in
-  let* _ = set_symtab sections symtab in
+  let* _ = set_symtab word_type sections symtab in
   write_section_contents word_type sections

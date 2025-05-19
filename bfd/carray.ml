@@ -8,6 +8,8 @@ module WordType : sig
 
   val to_typ : 'a t -> 'a typ
   val sizeof : 'a t -> int
+  val word_to_int64 : 'a t -> 'a -> int64
+  val sizeof_list : 'a word_type -> 'a list -> int
 end = struct
   type 'a t = 'a word_type
 
@@ -17,11 +19,15 @@ end = struct
 
   let sizeof : type a. a t -> int =
    fun word_type -> Ctypes.sizeof (to_typ word_type)
+
+  let word_to_int64 : type a. a t -> a -> int64 =
+   fun word_type word ->
+    match word_type with Word32 -> Int64.of_int32 word | Word64 -> word
+
+  let sizeof_list word_type list = sizeof word_type * List.length list
 end
 
 let of_list : type a. a word_type -> a list -> a carray =
  fun word_type list -> CArray.of_list (WordType.to_typ word_type) list
 
-let sizeof = WordType.sizeof
 let start = CArray.start
-let sizeof_list word_type list = sizeof word_type * List.length list
