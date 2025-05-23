@@ -12,6 +12,7 @@ type bfd = C.Types.bfd structure ptr
 type asection = C.Types.asection structure ptr
 type asymbol = C.Types.asymbol structure ptr
 
+module Arch = Arch
 module CArray = Carray
 module Section_flags = Section_flags
 module Symbol_flags = Symbol_flags
@@ -174,3 +175,8 @@ let set_symtab (syms : asymbol list) : unit BfdMonad.t =
   let syms = List.append syms [ from_voidp C.Types.asymbol null ] in
   let arr = CArray.of_list (ptr C.Types.asymbol) syms in
   ignore_m @@ set_symtab_raw (CArray.start arr) len
+
+let set_arch_mach arch mach =
+  ignore_m
+  @@ bfd_func_wrapper_2 C.Functions.bfd_set_arch_mach (Arch.to_t_generated arch)
+       (Arch.Machine.to_int32 mach)

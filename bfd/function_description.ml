@@ -49,4 +49,9 @@ module Functions (F : Ctypes.FOREIGN) = struct
   let bfd_set_symtab =
     foreign "bfd_set_symtab"
       (ptr Types.bfd @-> ptr (ptr Types.asymbol) @-> size_t @-> returning bool)
+
+  let bfd_set_arch_mach =
+    foreign "bfd_set_arch_mach"
+      (ptr Types.bfd @-> Types.bfd_architecture_type @-> int32_t
+     @-> returning bool)
 end

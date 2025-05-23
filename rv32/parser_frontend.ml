@@ -31,5 +31,5 @@ let rec loop lexbuf
 let parse_program (program : string) : structured_instruction list parser_result
     =
   let lexbuf = Lexing.from_string program in
-  try loop lexbuf (Parser.Incremental.prog lexbuf.lex_curr_p)
+  try loop lexbuf (Parser.Incremental.text lexbuf.lex_curr_p)
   with Parser_error.LexError inner -> Error (LexingError inner)

@@ -11,9 +11,9 @@ let ( and+ ) a b =
   let+ b' = b in
   Ok (a', b')
 
-let emptyprog = Ok []
+let emptytext = Ok []
 
-let mkprog instr rst =
+let mktext instr rst =
   let+ instr = instr and+ rst = rst in
   Ok (instr :: rst)
 
@@ -317,15 +317,15 @@ let mkauipc rd imm =
 %left PLUS MINUS
 %left TIMES DIVIDE
 
-%start <structured_instruction list parser_result> prog
+%start <structured_instruction list parser_result> text
 %type <register parser_result> reg
 %type <structured_instruction parser_result> instruction
 
 %%
 
-prog:
-  | EOF { emptyprog }
-  | i = instruction; p = prog { mkprog i p }
+text:
+  | EOF { emptytext }
+  | i = instruction; p = text { mktext i p }
 
 reg:
   | REG { mkregister $1 }

@@ -35,6 +35,8 @@ module Error : sig
   val to_string : t -> string
 end
 
+module Arch = Arch
+
 exception BfdException of Error.t
 
 module CArray : sig
@@ -90,3 +92,5 @@ val set_symtab : asymbol list -> unit BfdMonad.t
     Note: it's not possible to set the symbol table once the output has begun
     (e.g. [set_section_contents] initiates output). If it gets out of hand
     having an indexed monad would be nice. *)
+
+val set_arch_mach : Arch.t -> Arch.Machine.t -> unit BfdMonad.t

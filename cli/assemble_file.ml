@@ -13,7 +13,7 @@ let assemble program =
             RawInstruction.to_int (ast_to_raw structured_instruction))
           structured_instructions
       in
-      write_object_file ~word_type:Word32 ~name:"a.out"
+      write_object_file ~word_type:Word32 ~file_name:"a.out"
         ~sections:[ (Text, raw_instructions) ]
         ~symtab:[]
   | Error error -> failwith "Failed to parse instruction"
