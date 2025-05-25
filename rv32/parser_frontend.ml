@@ -23,9 +23,7 @@ let rec loop lexbuf
   | I.HandlingError e ->
       (* The parser has suspended itself because of a syntax error. Stop. *)
       Error (ParsingError (lexbuf_to_invalid_syntax lexbuf))
-  | I.Accepted v ->
-      (* The parser has succeeded and produced a semantic value. Print it. *)
-      v
+  | I.Accepted v -> v
   | I.Rejected -> failwith "Cannot end up here"
 
 let parse_program (program : string) : structured_instruction list parser_result
