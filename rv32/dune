@@ -6,7 +6,7 @@
 
 (library
  (name rv32)
- (libraries menhirLib)
+ (libraries menhirLib ocasm_assembler)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

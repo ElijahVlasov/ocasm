@@ -302,7 +302,7 @@ let mkauipc rd imm =
   Ok (Auipc (rd, imm))
 %}
 
-%token COMMA
+%token COMMA DOUBLE_QUOTES
 %token <int32> NUM
 %token PLUS MINUS TIMES DIVIDE
 %token ADD SUB AND OR XOR SLT SLTU SLL SRL SRA
@@ -310,6 +310,8 @@ let mkauipc rd imm =
 %token BEQ BNE BLT BGE BLTU BGEU
 %token JAL JALR LUI AUIPC
 %token ECALL EBREAK FENCE FENCE_I FENCE_T FENCE_TS
+%token ASCII BYTE
+%token <string> STRING
 %token <string> REG
 %token LPAREN RPAREN
 %token EOF
@@ -318,6 +320,8 @@ let mkauipc rd imm =
 %left TIMES DIVIDE
 
 %start <structured_instruction list parser_result> text
+%type <Directives.t> directive
+%type <string list> string_list
 %type <register parser_result> reg
 %type <structured_instruction parser_result> instruction
 
@@ -326,6 +330,13 @@ let mkauipc rd imm =
 text:
   | EOF { emptytext }
   | i = instruction; p = text { mktext i p }
+
+string_list:
+  | STRING { [$1] }
+  | s = STRING COMMA tail = string_list { s :: tail }
+
+directive:
+  | ASCII string_list { Directives.Ascii $1 }
 
 reg:
   | REG { mkregister $1 }
