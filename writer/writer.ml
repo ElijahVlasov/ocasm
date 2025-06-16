@@ -1,4 +1,5 @@
 open Base
+open Ocasm_assembler
 module Section = Section
 
 type 'a symbol = 'a Symbol.symbol

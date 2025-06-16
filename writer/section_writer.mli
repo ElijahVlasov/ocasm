@@ -1,6 +1,7 @@
 open Base
 open Bfd
 open Bfd.CArray
+open Ocasm_assembler
 
 type 'a section_info = { bfd_sec : Bfd.asection; contents : 'a list }
 

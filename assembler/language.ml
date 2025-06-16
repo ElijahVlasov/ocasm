@@ -1,10 +1,10 @@
 open Base
-open Bfd.CArray
+open Ocasm_binary
 
 module type WORD_TYPE = sig
   type word
 
-  val word_type : word word_type
+  val word_type : word Word_type.t
 end
 
 module Identifier : sig
@@ -21,11 +21,14 @@ module type I = sig
 
   include WORD_TYPE
 
-  val assemble : t -> idens:(Identifier.t, word) Hashtbl.t -> word
+  val assemble : t -> sym_tab:(Identifier.t, word) Hashtbl.t -> word
 end
 
 module Assembly (Instruction : I) = struct
-  type t = Directive of Directives.t | Instruction of Instruction.t
+  type t =
+    | Directive of Directives.t
+    | Instruction of Instruction.t
+    | Label of Identifier.t
 end
 
 module Relocateable (WordType : WORD_TYPE) = struct
@@ -37,14 +40,21 @@ module Assembler (Instruction : I) = struct
 
   type state = {
     mutable section : Section.t;
-    idens : (Identifier.t, Instruction.word) Hashtbl.t;
+    mutable offset : Instruction.word;
+    sym_tab : (Identifier.t, Instruction.word) Hashtbl.t;
   }
 
   let assemble (line : Lang.t) =
     let state =
-      { section = Section.Text; idens = Hashtbl.create (module Identifier) }
+      {
+        section = Section.Text;
+        sym_tab = Hashtbl.create (module Identifier);
+        offset = Word_type.zero Instruction.word_type;
+      }
     in
     match line with
     | Lang.Directive dir -> failwith "Not implemented"
-    | Lang.Instruction instr -> Instruction.assemble ~idens:state.idens instr
+    | Lang.Instruction instr ->
+        Instruction.assemble ~sym_tab:state.sym_tab instr
+    | Lang.Label label -> failwith "Not implemented"
 end

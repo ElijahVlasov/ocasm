@@ -1,1 +1,9 @@
-type t = ROData | Text | Data | Bss
+open Base
+
+type t = ROData | Text | Data | Bss [@@deriving eq, ord, hash, sexp]
+
+let to_string = function
+  | ROData -> ".rodata"
+  | Data -> ".data"
+  | Text -> ".text"
+  | Bss -> ".bss"

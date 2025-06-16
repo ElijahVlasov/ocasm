@@ -1,11 +1,19 @@
 open Base
 open Bfd
 open Bfd.CArray
-open Section
+open Ocasm_assembler
 
 type 'a section_info = { bfd_sec : Bfd.asection; contents : 'a list }
 
 let ( let* ) = BfdMonad.( >>= )
+
+let section_flags (sec : Section.t) =
+  let open Section_flags in
+  match sec with
+  | Section.ROData -> sec_has_contents |+ sec_readonly
+  | Section.Text -> sec_has_contents |+ sec_code
+  | Section.Data -> sec_has_contents |+ sec_data
+  | Section.Bss -> sec_no_flags
 
 let init_sections word_type sections =
   let open BfdMonad in

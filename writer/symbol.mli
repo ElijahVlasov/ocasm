@@ -2,6 +2,7 @@ open Base
 open Bfd
 open Bfd.CArray
 open Section_writer
+open Ocasm_assembler
 
 type 'a symbol = {
   section : Section.t;
