@@ -1,8 +1,6 @@
 open Base
 open Bfd.CArray
-open Ocasm_assembler 
-
-module Section = Section
+open Ocasm_assembler
 
 type 'a symbol = 'a Symbol.symbol
 

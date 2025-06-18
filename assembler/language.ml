@@ -38,23 +38,12 @@ end
 module Assembler (Instruction : I) = struct
   module Lang = Assembly (Instruction)
 
-  type state = {
-    mutable section : Section.t;
-    mutable offset : Instruction.word;
-    sym_tab : (Identifier.t, Instruction.word) Hashtbl.t;
-  }
-
   let assemble (line : Lang.t) =
-    let state =
-      {
-        section = Section.Text;
-        sym_tab = Hashtbl.create (module Identifier);
-        offset = Word_type.zero Instruction.word_type;
-      }
-    in
+    let state = State.create [ Section.Text; Section.Data; Section.Bss ] in
     match line with
     | Lang.Directive dir -> failwith "Not implemented"
     | Lang.Instruction instr ->
-        Instruction.assemble ~sym_tab:state.sym_tab instr
+        failwith "Not implemented"
+        (* Instruction.assemble ~sym_tab:state.sym_tab instr *)
     | Lang.Label label -> failwith "Not implemented"
 end

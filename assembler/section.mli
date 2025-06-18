@@ -1,6 +1,6 @@
 open Base
 
-type t = ROData | Text | Data | Bss [@@deriving eq, ord, hash, sexp]
+type t = ROData | Text | Data | Bss [@@deriving eq, ord, hash, compare, sexp]
 
 include Equal.S with type t := t
 
