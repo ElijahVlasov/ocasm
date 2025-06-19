@@ -1,20 +1,14 @@
 open Base
 open Bfd
 open Bfd.CArray
-open Section_writer
 open Ocasm_assembler
-
-type 'a symbol = {
-  section : Section.t;
-  name : string;
-  value : 'a;
-  flags : Bfd.Symbol_flags.t;
-}
 
 let ( let* ) = BfdMonad.( >>= )
 
 let set_symtab word_type sections symtab =
   let open BfdMonad in
+  let open Symbol in
+  let open Section_writer in
   let* symtab =
     all
     @@
