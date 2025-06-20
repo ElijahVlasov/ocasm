@@ -1,8 +1,9 @@
 open Base
+open Bfd
 
 type 'a t = {
   section : Section.t;
   name : string;
   value : 'a;
-  flags : Bfd.Symbol_flags.t;
+  flags : Symbol_flags.t;
 }
