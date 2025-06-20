@@ -1,6 +1,6 @@
 open Base
-open Bfd
-open Bfd.CArray
+open Ocasm_binary
+open Ocasm_binary.Bfd
 open Ocasm_assembler
 
 let ( let* ) = BfdMonad.( >>= )
@@ -15,7 +15,7 @@ let set_symtab word_type sections symtab =
     let mk_symbol { section; name; value; flags } =
       let sec = (Hashtbl.find_exn sections section).bfd_sec in
       Bfd.make_symbol ~sec ~name ~flags
-        ~value:(WordType.word_to_int64 word_type value)
+        ~value:(Word_type.word_to_int64 word_type value)
     in
     List.map ~f:mk_symbol symtab
   in

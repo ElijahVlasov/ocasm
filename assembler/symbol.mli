@@ -1,5 +1,5 @@
 open Base
-open Bfd
+open Ocasm_binary
 
 type 'a t = {
   section : Section.t;

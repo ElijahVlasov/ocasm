@@ -1,10 +1,10 @@
 open Base
-open Bfd
-open Bfd.CArray
+open Ocasm_binary
+open Ocasm_binary.Bfd
 open Ocasm_assembler
 
 val set_symtab :
-  'a word_type ->
+  'a Word_type.t ->
   (Section.t, 'a Section_writer.section_info) Hashtbl.t ->
   'a Symbol.t list ->
   unit BfdMonad.t

@@ -1,6 +1,5 @@
 open Rv32.Parser_frontend
 open Rv32.Instruction
-open Bfd.CArray
 open Writer
 
 let assemble program =

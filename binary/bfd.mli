@@ -39,21 +39,6 @@ module Arch = Arch
 
 exception BfdException of Error.t
 
-module CArray : sig
-  type 'a carray
-  type 'a word_type = Word32 : int32 word_type | Word64 : int64 word_type
-
-  module WordType : sig
-    type 'a t = 'a word_type
-
-    val sizeof : 'a t -> int
-    val sizeof_list : 'a word_type -> 'a list -> int
-    val word_to_int64 : 'a t -> 'a -> int64
-  end
-
-  val of_list : 'a word_type -> 'a list -> 'a carray
-end
-
 module Section_flags = Section_flags
 module Symbol_flags = Symbol_flags
 
@@ -73,7 +58,7 @@ val set_section_flags : asection -> Section_flags.t -> unit
 val set_section_size : asection -> int64 -> unit
 
 val set_section_contents :
-  'a CArray.word_type ->
+  'a Word_type.t ->
   sec:asection ->
   content:'a list ->
   file_offset:int64 ->

@@ -13,7 +13,6 @@ type asection = C.Types.asection structure ptr
 type asymbol = C.Types.asymbol structure ptr
 
 module Arch = Arch
-module CArray = Carray
 module Section_flags = Section_flags
 module Symbol_flags = Symbol_flags
 
@@ -139,15 +138,13 @@ let set_section_size (section : asection) (size : int64) : unit =
 let set_section_contents_raw =
   bfd_func_wrapper_4 C.Functions.bfd_set_section_contents
 
-let set_section_contents word_type ~sec ~content ~file_offset : unit BfdMonad.t
-    =
-  let typ = CArray.WordType.to_typ word_type in
-  let count = List.length content * sizeof typ in
+let set_section_contents wt ~sec ~content ~file_offset : unit BfdMonad.t =
+  let count = Word_type.sizeof_list wt content in
   let count = Unsigned.Size_t.of_int count in
-  let arr = CArray.of_list word_type content in
+  let arr = Carray.of_list wt content in
   ignore_m
   @@ set_section_contents_raw sec
-       (to_voidp (CArray.start arr))
+       (to_voidp (Carray.start arr))
        file_offset count
 
 let make_empty_symbol =

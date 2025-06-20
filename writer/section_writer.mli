@@ -1,14 +1,13 @@
 open Base
-open Bfd
-open Bfd.CArray
+open Ocasm_binary
 open Ocasm_assembler
 
 type 'a section_info = { bfd_sec : Bfd.asection; contents : 'a list }
 
 val init_sections :
-  'a word_type ->
+  'a Word_type.t ->
   (Section.t * 'a list) list ->
-  (Section.t, 'a section_info) Hashtbl.t BfdMonad.t
+  (Section.t, 'a section_info) Hashtbl.t Bfd.BfdMonad.t
 
 val write_section_contents :
-  'a word_type -> (Section.t, 'a section_info) Hashtbl.t -> unit BfdMonad.t
+  'a Word_type.t -> (Section.t, 'a section_info) Hashtbl.t -> unit Bfd.BfdMonad.t
