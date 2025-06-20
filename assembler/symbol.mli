@@ -1,6 +1,6 @@
 open Base
 
-type 'a symbol = {
+type 'a t = {
   section : Section.t;
   name : string;
   value : 'a;
