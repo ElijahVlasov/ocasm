@@ -51,6 +51,8 @@ let on_contents s ~(f : Buffer.t -> 'a -> 'b) : 'a -> 'b =
 let write_byte = on_contents ~f:Buffer.add_char
 let write_int32 = on_contents ~f:Buffer.add_int32_le
 let write_int64 = on_contents ~f:Buffer.add_int64_le
+let write_string = on_contents ~f:Buffer.add_string
+let write_bytes = on_contents ~f:Buffer.add_bytes
 
 let switch_section s sec =
   s.curr_section <- sec;
