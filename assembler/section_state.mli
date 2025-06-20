@@ -10,7 +10,7 @@ val finalize : t -> (Section.t, Buffer.t) Hashtbl.t
 val write_byte : t -> char -> unit
 val write_int32 : t -> int32 -> unit
 val write_int64 : t -> int64 -> unit
-val write_string : t -> string -> unit 
+val write_string : t -> string -> unit
 val write_bytes : t -> bytes -> unit
 val curr_section : t -> Section.t
 val switch_section : t -> Section.t -> unit

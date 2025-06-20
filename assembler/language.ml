@@ -24,9 +24,9 @@ module type I = sig
   val assemble : t -> sym_tab:(Identifier.t, word) Hashtbl.t -> word
 end
 
-module Relocateable (WordType : WORD_TYPE) = struct
-  type t = Abs of WordType.word | Rel of Identifier.t
-end
+(* module Relocateable (WordType : WORD_TYPE) = struct *)
+(*   type t = Abs of WordType.word | Rel of Identifier.t *)
+(* end *)
 
 module type A = sig
   type instruction
@@ -53,7 +53,7 @@ module type M = sig
   val assemble_instruction : word State.t -> instruction -> unit
 end
 
-module Make (M : M) : S = struct
+module Make (M : M) = struct
   include M
 
   type expr =

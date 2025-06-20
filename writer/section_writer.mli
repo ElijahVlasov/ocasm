@@ -10,4 +10,6 @@ val init_sections :
   (Section.t, 'a section_info) Hashtbl.t Bfd.BfdMonad.t
 
 val write_section_contents :
-  'a Word_type.t -> (Section.t, 'a section_info) Hashtbl.t -> unit Bfd.BfdMonad.t
+  'a Word_type.t ->
+  (Section.t, 'a section_info) Hashtbl.t ->
+  unit Bfd.BfdMonad.t
