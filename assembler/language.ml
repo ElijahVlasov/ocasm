@@ -16,18 +16,6 @@ end = struct
   include String
 end
 
-module type I = sig
-  type t
-
-  include WORD_TYPE
-
-  val assemble : t -> sym_tab:(Identifier.t, word) Hashtbl.t -> word
-end
-
-(* module Relocateable (WordType : WORD_TYPE) = struct *)
-(*   type t = Abs of WordType.word | Rel of Identifier.t *)
-(* end *)
-
 module type A = sig
   type instruction
   type directive
@@ -70,7 +58,25 @@ module Make (M : M) = struct
         let stab_s = State.symtab_state s in
         let loc = Section_state.loc_counter sec_s in
         let section = Section_state.curr_section sec_s in
-        let flags = (Bfd.Symbol_flags.bsf_global : Bfd.Symbol_flags.t) in
+        let flags = Bfd.Symbol_flags.bsf_global in
         Symtab_state.add_symbol stab_s
           { name = label; value = Word_type.of_int wt loc; section; flags }
 end
+
+module type I = sig
+  type t
+
+  include WORD_TYPE
+
+  val assemble : word State.t -> t -> unit
+end
+
+module Make2 (I : I) = Make (struct
+  type instruction = I.t
+  type directive = Directive.t
+
+  include I
+
+  let assemble_directive = Directive.assemble_directive
+  let assemble_instruction = I.assemble
+end)
