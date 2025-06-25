@@ -1,6 +1,6 @@
 (library
- (name writer)
- (libraries base ocasm_bfd ocasm_utils ocasm_assembler)
+ (name ocasm_utils)
+ (libraries base)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

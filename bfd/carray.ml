@@ -1,4 +1,5 @@
 open Ctypes
+open Ocasm_utils
 
 type 'a carray = 'a Ctypes.carray
 

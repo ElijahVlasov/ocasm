@@ -1,32 +1,30 @@
 open Base
-open Ocasm_binary
-
-module type WORD_TYPE = sig
-  type word
-
-  val wt : word Word_type.t
-end
+open Ocasm_utils
 
 module type A = sig
   type instruction
   type directive
 end
 
-module type S = sig
+module type E = sig
   include A
-  include WORD_TYPE
 
   type expr =
     | Directive of directive
     | Instruction of instruction
     | Label of string
+end
+
+module type S = sig
+  include Word_type.W
+  include E
 
   val assemble_expr : word State.t -> expr -> unit
 end
 
 module type M = sig
   include A
-  include WORD_TYPE
+  include Word_type.W
 
   val assemble_directive : word State.t -> directive -> unit
   val assemble_instruction : word State.t -> instruction -> unit
@@ -41,7 +39,7 @@ module Make (M : M) :
 module type I = sig
   type t
 
-  include WORD_TYPE
+  include Word_type.W
 
   val assemble : word State.t -> t -> unit
 end
@@ -51,5 +49,3 @@ module Make2 (I : I) :
     with type word := I.word
     with type instruction := I.t
     with type directive := Directive.t
-
-

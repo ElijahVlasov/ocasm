@@ -1,4 +1,5 @@
 open Base
+open Ocasm_utils
 
 type bfd
 type asection

@@ -1,6 +1,7 @@
 open Base
-open Ocasm_binary
 open Ocasm_assembler
+open Ocasm_bfd
+open Ocasm_utils
 
 type 'a section_info = { bfd_sec : Bfd.asection; contents : 'a list }
 

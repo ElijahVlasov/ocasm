@@ -1,5 +1,5 @@
 open Base
-open Ocasm_binary
+open Ocasm_utils
 
 type 'a t
 

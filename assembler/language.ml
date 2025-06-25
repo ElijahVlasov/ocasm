@@ -1,5 +1,6 @@
 open Base
-open Ocasm_binary
+open Ocasm_bfd
+open Ocasm_utils
 
 module type WORD_TYPE = sig
   type word
@@ -21,14 +22,18 @@ module type A = sig
   type directive
 end
 
-module type S = sig
+module type E = sig
   include A
-  include WORD_TYPE
 
   type expr =
     | Directive of directive
     | Instruction of instruction
     | Label of string
+end
+
+module type S = sig
+  include Word_type.W
+  include E
 
   val assemble_expr : word State.t -> expr -> unit
 end

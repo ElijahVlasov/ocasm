@@ -20,5 +20,5 @@
 
 (test
  (name test_bfd)
- (libraries alcotest ocasm_binary ctypes)
+ (libraries alcotest ocasm_bfd ctypes)
  (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib -cclib -lbfd))

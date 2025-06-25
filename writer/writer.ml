@@ -1,6 +1,6 @@
 open Base
-open Ocasm_binary
-open Ocasm_binary.Bfd.BfdMonad
+open Ocasm_bfd
+open Ocasm_bfd.Bfd.BfdMonad
 
 let ( let* ) = ( >>= )
 
@@ -9,7 +9,7 @@ let write_object_file ~wt ~file_name ~sections ~symtab =
   Bfd.with_bfd ~file_name ~target
   @@
   let* _ =
-    Bfd.set_arch_mach Ocasm_binary.Arch.Riscv Ocasm_binary.Arch.Machine.riscv32
+    Bfd.set_arch_mach Ocasm_bfd.Arch.Riscv Ocasm_bfd.Arch.Machine.riscv32
   in
   let* _ = Bfd.set_object_format in
   let* sections = Section_writer.init_sections wt sections in

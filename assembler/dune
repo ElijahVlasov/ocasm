@@ -1,6 +1,6 @@
 (library
  (name ocasm_assembler)
- (libraries ocasm_binary)
+ (libraries ocasm_bfd)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

@@ -1,5 +1,11 @@
 type 'a t = Word32 : int32 t | Word64 : int64 t
 
+module type W = sig
+  type word
+
+  val wt : word t
+end
+
 let of_int : type a. a t -> int -> a = function
   | Word32 -> Int32.of_int
   | Word64 -> Int64.of_int

@@ -6,3 +6,9 @@ val zero : 'a t -> 'a
 val sizeof : 'a t -> int
 val sizeof_list : 'a t -> 'a list -> int
 val word_to_int64 : 'a t -> 'a -> int64
+
+module type W = sig
+  type word
+
+  val wt : word t
+end

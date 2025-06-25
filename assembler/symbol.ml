@@ -4,5 +4,5 @@ type 'a t = {
   section : Section.t;
   name : string;
   value : 'a;
-  flags : Ocasm_binary.Symbol_flags.t;
+  flags : Ocasm_bfd.Symbol_flags.t;
 }

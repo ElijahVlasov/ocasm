@@ -1,5 +1,5 @@
-open Ocasm_binary
-open Ocasm_binary.Bfd.BfdMonad
+open Ocasm_bfd
+open Ocasm_bfd.Bfd.BfdMonad
 
 let ( let* ) x f = bind x ~f
 
