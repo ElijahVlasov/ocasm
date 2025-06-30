@@ -48,8 +48,17 @@ end = struct
 
   let chunk_len = 4096
 
-  let fetch_chunk st =
+  let read st buf =
     let module I = Stdlib.In_channel in
+    let read = I.input st.in_ch buf 0 chunk_len in
+    if read < chunk_len then (
+      (* we have hit the eof *)
+      st.file_pos <- -1;
+      (* let's mark the eof in the buffer *)
+      Bytes.set buf read eof)
+    else st.file_pos <- st.file_pos + read
+
+  let fetch_chunk st =
     let ( = ) = Int.equal in
     (* If we have already hit the eof *)
     (* just move on to the next buffer *)
@@ -58,16 +67,10 @@ end = struct
       let swp_bufs st =
         let tmp = st.buf1 in
         st.buf1 <- st.buf2;
-        st.buf2 <- st.buf1
+        st.buf2 <- tmp
       in
       swp_bufs st;
-      let read = I.input st.in_ch st.buf2 0 chunk_len in
-      if read < chunk_len then (
-        (* we have hit the eof *)
-        st.file_pos <- -1;
-        (* let's mark the eof in the buffer *)
-        Bytes.set st.buf2 read eof)
-      else st.file_pos <- st.file_pos + read
+      read st st.buf2
 
   let peek st = Bytes.unsafe_get st.buf1 st.cursor
 
@@ -94,7 +97,8 @@ end = struct
         in_ch = I.open_text path;
       }
     in
-    fetch_chunk st;
+    read st st.buf1;
+    read st st.buf2;
     st
 
   let close st = Stdlib.In_channel.close st.in_ch
