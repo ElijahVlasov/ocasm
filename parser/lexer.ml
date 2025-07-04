@@ -59,30 +59,15 @@ let rec multiline_comment st k =
   if ch = '*' then
     if peek st = '/' then (
       skip st;
-      k st)
+      k st (next st))
     else multiline_comment st k
   else if ch = Input.eof then failwith "Unfinished comment"
   else multiline_comment st k
 
 let multiline_comment_start st k =
-  skip st;
   let next_ch = next st in
   if next_ch = '*' then multiline_comment st k
   else failwith "Expected multiline comment"
-
-let rec single_line_comment st k =
-  let ch = peek st in
-  match ch with
-  | '\n' -> k st
-  | ch when ch = Input.eof -> k st
-  | _ ->
-      skip st;
-      single_line_comment st k
-
-let lex_comments st ch k =
-  if ch = '/' then multiline_comment_start st k
-  else if ch = '#' then single_line_comment st k
-  else failwith "This can't be reached"
 
 let after_number st = Token.Decimal (Buffer.contents st.content)
 
@@ -101,24 +86,23 @@ let number_start st ch =
     after_number st
   else number st
 
-let rec skip_comments_and_whitespaces st =
-  let ch = peek st in
-  match ch with
-  | '\t' | ' ' ->
-      skip st;
-      skip_comments_and_whitespaces st
-  | '#' ->
-      let rec ignore_until_nl st =
-        let ch = peek st in
-        if ch = '\n' then () else ignore_until_nl st
-      in
-      ignore_until_nl st
-  | '/' -> multiline_comment_start st skip_comments_and_whitespaces
-  | _ -> ()
+let skip_comments_and_whitespaces st =
+  let rec skip_comments_and_whitespaces st ch =
+    match ch with
+    | '\t' | ' ' -> skip_comments_and_whitespaces st (next st)
+    | '#' ->
+        let rec ignore_until_nl st =
+          let ch = peek st in
+          if ch = '\n' then ch else ignore_until_nl st
+        in
+        ignore_until_nl st
+    | '/' -> multiline_comment_start st skip_comments_and_whitespaces
+    | _ -> ch
+  in
+  skip_comments_and_whitespaces st (next st)
 
-let rec read_name st =
+let rec read_name st ch =
   let module Lut = Ocasm_utils.Lut in
-  let ch = peek st in
   let finalize =
     (Buffer.contents st.content, Buffer.contents st.lower_case_content)
   in
@@ -128,10 +112,10 @@ let rec read_name st =
   | ch when ch = Input.eof -> finalize
   | ch when Lut.mem special_symbols ch -> finalize
   | _ ->
-      let ch = next st in
       Buffer.add_char st.content ch;
       Buffer.add_char st.lower_case_content (Char.lowercase ch);
-      read_name st
+      let ch = next st in
+      read_name st ch
 
 let directive_started st =
   skip st;
@@ -139,21 +123,20 @@ let directive_started st =
   Buffer.clear st.lower_case_content;
   read_name st
 
-let symbol_started st =
+let symbol_started st ch =
   Buffer.clear st.content;
   Buffer.clear st.lower_case_content;
-  read_name st
+  read_name st ch
 
 let next_token st =
   let module Lut = Ocasm_utils.Lut in
   let open Token in
-  skip_comments_and_whitespaces st;
-  let ch = peek st in
+  let ch = skip_comments_and_whitespaces st in
   match ch with
   | '\n' -> End_of_line
   | '0' .. '9' -> number_start st ch
-  | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st)
-  | '.' -> Symbol_or_directive (directive_started st)
+  | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st ch)
+  | '.' -> Symbol_or_directive (directive_started st ch)
   | ',' -> Comma
   | ':' -> Colon
   | '(' -> LBracket
