@@ -1,6 +1,6 @@
 (library
  (name ocasm_parser)
- (libraries base)
+ (libraries base ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

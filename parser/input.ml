@@ -5,6 +5,7 @@ module type S = sig
 
   val next : t -> char
   val peek : t -> char
+  val skip : t -> unit
   val close : t -> unit
 end
 
@@ -29,6 +30,7 @@ end = struct
     st.cursor <- st.cursor + 1;
     next_ch
 
+  let skip st = Fn.ignore @@ next st
   let create ~content = { content; cursor = 0 }
   let close st = ()
 end
@@ -86,6 +88,8 @@ end = struct
        else st.cursor <- st.cursor + 1);
     next_ch
 
+  let skip st = Fn.ignore @@ next st
+
   let create ~path =
     let module I = Stdlib.In_channel in
     let st =
@@ -129,6 +133,7 @@ end = struct
     if ch = '\n' then next_line st else st.col <- st.col + 1;
     ch
 
+  let skip st = Fn.ignore @@ next st
   let pos st = (st.line, st.col)
   let create wrapped = { wrapped; line = 0; col = 0 }
   let close st = Input.close st.wrapped

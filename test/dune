@@ -28,3 +28,7 @@
  (libraries alcotest base ocasm_parser)
  (deps
   (glob_files assets/input/*)))
+
+(test
+ (name test_lexer)
+ (libraries alcotest base ocasm_parser))

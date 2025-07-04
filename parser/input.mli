@@ -5,6 +5,8 @@ module type S = sig
 
   val next : t -> char
   val peek : t -> char
+  val skip : t -> unit
+
   val close : t -> unit
 end
 
