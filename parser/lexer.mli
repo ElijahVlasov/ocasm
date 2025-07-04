@@ -4,7 +4,10 @@ module Token : sig
   type t =
     | Colon
     | Comma
-    | Decimal of string
+    | Bin of string
+    | Oct of string
+    | Dec of string
+    | Hex of string
     | End_of_file
     | End_of_line
     | ExclamaitionMark

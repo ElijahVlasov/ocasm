@@ -40,6 +40,10 @@ let tests_single_token =
     ( "Curly bracket with multiline comments",
       `Quick,
       test_single_token "/* sdagdgsa \n \n */ /* */{}" LCurly );
+    ("Binary", `Quick, test_single_token "0b1010" (Bin "0b1010"));
+    ("Octal", `Quick, test_single_token "0000242455" (Oct "0000242455"));
+    ("No leading zeros: 0", `Quick, test_single_token "0" (Dec "0"));
+    ("No leading zeros: 50", `Quick, test_single_token "50" (Dec "50"));
   ]
 
 let tests_multiple_tokens =
@@ -48,6 +52,10 @@ let tests_multiple_tokens =
     ( "Curly brackets",
       `Quick,
       test_multiple_tokens "{}" [ LCurly; RCurly; End_of_file ] );
+    ( "Three \\n's",
+      `Quick,
+      test_multiple_tokens "\n \n\n"
+        [ End_of_line; End_of_line; End_of_line; End_of_file ] );
   ]
 
 let () =

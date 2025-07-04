@@ -1,10 +1,14 @@
 open Base
+open Ocasm_utils
 
 module Token = struct
   type t =
     | Colon
     | Comma
-    | Decimal of string
+    | Bin of string
+    | Oct of string
+    | Dec of string
+    | Hex of string
     | End_of_file
     | End_of_line
     | ExclamaitionMark
@@ -69,22 +73,42 @@ let multiline_comment_start st k =
   if next_ch = '*' then multiline_comment st k
   else failwith "Expected multiline comment"
 
-let after_number st = Token.Decimal (Buffer.contents st.content)
-
-let rec number st =
+let rec consume_while_true st pred =
   let ch = peek st in
-  if Char.is_digit ch then (
+  if pred ch then (
     Buffer.add_char st.content ch;
     skip st;
-    number st)
-  else after_number st
+    consume_while_true st pred)
+  else Buffer.contents st.content
+
+let bin_number st = consume_while_true st Char.is_binary
+let oct_number st = consume_while_true st Char.is_octal
+let dec_number st = consume_while_true st Char.is_digit
+let hex_number st = consume_while_true st Char.is_hex_digit
 
 let number_start st ch =
+  let open Token in
   Buffer.clear st.content;
+  Buffer.add_char st.content ch;
   if ch = '0' then
-    let ch = next st in
-    after_number st
-  else number st
+    let ch = peek st in
+    if Char.is_digit ch then (
+      match ch with
+      | '8' | '9' -> failwith "Incorrect octal constant"
+      | _ ->
+          skip st;
+          Buffer.add_char st.content ch;
+          Oct (oct_number st))
+    else if Char.lowercase ch = 'x' then (
+      skip st;
+      Buffer.add_char st.content ch;
+      Hex (hex_number st))
+    else if Char.lowercase ch = 'b' then (
+      skip st;
+      Buffer.add_char st.content ch;
+      Bin (bin_number st))
+    else Dec "0"
+  else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =
   let rec skip_comments_and_whitespaces st ch =
