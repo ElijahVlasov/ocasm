@@ -30,7 +30,6 @@ module type S = sig
 
   module Cursor : C with type input := t
 
-  val parent : Cursor.t -> t
   val advance : t -> Cursor.t -> unit
 end
 
@@ -65,9 +64,7 @@ end = struct
     type t = { parent : string_input; mutable pos : int }
 
     let create parent = { parent; pos = parent.cursor }
-    let parent i = i.parent
     let get i = String.unsafe_get i.parent.content i.pos
-    let pos i = i.pos
 
     let next i =
       let next_pos = i.pos + 1 in
@@ -87,8 +84,9 @@ end = struct
     let back_unchecked i = i.pos <- i.pos - 1
   end
 
-  let parent = Cursor.parent
-  let advance st i = st.cursor <- Cursor.pos i
+  let advance st i =
+    let open Cursor in
+    st.cursor <- i.pos
 end
 
 type file_input = {
@@ -119,7 +117,6 @@ end = struct
     else st.file_pos <- st.file_pos + read
 
   let fetch_chunk st =
-    let ( = ) = Int.equal in
     (* If we have already hit the eof *)
     (* just move on to the next buffer *)
     if st.file_pos = -1 then st.buf1 <- st.buf2
@@ -183,8 +180,6 @@ end = struct
 
     type t = { parent : file_input; pos : Pointer.t }
 
-    let parent i = i.parent
-    let pos i = i.pos
     let create parent = { parent; pos = ref parent.cursor }
 
     let get i =
@@ -221,8 +216,6 @@ end = struct
     let back_unchecked i = Pointer.dec_unsafe i.pos
   end
 
-  let parent = Cursor.parent
-
   let advance st i =
     let open Cursor in
     let open Cursor.Pointer in
@@ -252,7 +245,6 @@ end = struct
   let peek st = Input.peek st.wrapped
 
   let next st =
-    let ( = ) = Char.equal in
     let next_line st =
       st.line <- st.line + 1;
       st.col <- 0
@@ -268,27 +260,14 @@ end = struct
 
   module Cursor = struct
     type input = t
-
-    type t = {
-      wrapped : Input.Cursor.t;
-      parent : Input.t positioned_input;
-      mutable line : int;
-      mutable col : int;
-    }
-
-    let parent i = i.parent
+    type t = { wrapped : Input.Cursor.t; mutable line : int; mutable col : int }
 
     let create (parent : input) =
       {
         wrapped = Input.Cursor.create parent.wrapped;
-        parent;
         line = parent.line;
         col = parent.col;
       }
-
-    let unwrap i = i.wrapped
-    let line i = i.line
-    let col i = i.col
 
     let get (i : t) =
       let open Input in
@@ -311,12 +290,9 @@ end = struct
 
     let step i =
       let ch = get i in
-      if Char.is_newline ch then
-        if Input.Cursor.step i.wrapped then (
-          newline i;
-          true)
-        else false
-      else Input.Cursor.step i.wrapped
+      let has_stepped = Input.Cursor.step i.wrapped in
+      if has_stepped && Char.is_newline ch then newline i;
+      has_stepped
 
     let step_unchecked i =
       let ch = get i in
@@ -324,13 +300,13 @@ end = struct
       Input.Cursor.step_unchecked i.wrapped
 
     let back i =
-      if Input.Cursor.back i.wrapped then (
+      let has_backed = Input.Cursor.back i.wrapped in
+      if has_backed then
         if Char.is_newline (get i) then (
           i.col <- 0;
           i.line <- i.line - 1)
         else i.col <- i.col - 1;
-        true)
-      else false
+      has_backed
 
     let back_unchecked i =
       Input.Cursor.back_unchecked i.wrapped;
@@ -340,10 +316,9 @@ end = struct
       else i.col <- i.col - 1
   end
 
-  let parent = Cursor.parent
-
-  let advance st i =
-    st.line <- Cursor.line i;
-    st.col <- Cursor.col i;
-    Input.advance st.wrapped (Cursor.unwrap i)
+  let advance (st : t) (i : Cursor.t) =
+    let open Cursor in
+    st.line <- i.line;
+    st.col <- i.col;
+    Input.advance st.wrapped i.wrapped
 end

@@ -29,7 +29,6 @@ module type S = sig
 
   module Cursor : C with type input := t
 
-  val parent : Cursor.t -> t
   val advance : t -> Cursor.t -> unit
 end
 
