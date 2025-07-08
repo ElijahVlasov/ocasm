@@ -49,16 +49,16 @@ let test_file_input_entire_file path () =
   in
   Alcotest.check string "expected to be same strings" expected result
 
-let test_cursor_back_forth (type a) csr_m (csr : a) ~get ?buf_len expected =
+let test_cursor_back_forth (type a) csr_m (csr : a) ?buf_len expected =
   let module C = (val csr_m : Input.C with type t = a) in
   let open C in
   let rec roll_forward buf =
-    Buffer.add_char buf (get csr);
+    Buffer.add_char buf (C.get csr);
     if step csr then roll_forward buf
   in
   let rec roll_backward buf =
     if back csr then (
-      Buffer.add_char buf (get csr);
+      Buffer.add_char buf (C.get csr);
       roll_backward buf)
   in
   let got =
@@ -75,7 +75,7 @@ let test_string_input_cursor_back_forth () =
   let input = I.create ~content in
   let csr = I.start input in
   let expected = "abcdedcba" in
-  test_cursor_back_forth ~get:(I.get input) (module I.Cursor) csr expected
+  test_cursor_back_forth (module I.Cursor) csr expected
 
 let test_string_input_cursor_back_forth_two_chars_forward () =
   let content = "abcde" in
@@ -88,7 +88,7 @@ let test_string_input_cursor_back_forth_two_chars_forward () =
   in
   let csr = I.start input in
   let expected = "cdedc" in
-  test_cursor_back_forth ~get:(I.get input) (module I.Cursor) csr expected
+  test_cursor_back_forth (module I.Cursor) csr expected
 
 let test_file_input_cursor_back_forth expected path =
   let module I = Input.FileInput in
@@ -97,7 +97,7 @@ let test_file_input_cursor_back_forth expected path =
     (I.create ~path)
     ~f:(fun input ->
       let csr = I.start input in
-      test_cursor_back_forth ~get:(I.get input)
+      test_cursor_back_forth
         ~buf_len:(2 * String.length expected)
         (module I.Cursor)
         csr

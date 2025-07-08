@@ -9,6 +9,7 @@ module type C = sig
   val step_unchecked : t -> unit
   val back : t -> bool
   val back_unchecked : t -> unit
+  val get : t -> char
 end
 
 module type S = sig
@@ -23,7 +24,6 @@ module type S = sig
 
   val parent : Cursor.t -> t
   val start : t -> Cursor.t
-  val get : t -> Cursor.t -> char
   val advance : t -> Cursor.t -> unit
 end
 
@@ -82,7 +82,6 @@ end = struct
 
   let parent = Cursor.parent
   let start st = Cursor.create st st.cursor
-  let get st i = Cursor.get i
   let advance st i = st.cursor <- Cursor.pos i
 end
 
@@ -218,7 +217,6 @@ end = struct
 
   let parent = Cursor.parent
   let start st = Cursor.create st st.cursor
-  let get _ i = Cursor.get i
 
   let advance st i =
     let open Cursor in
@@ -255,7 +253,7 @@ end = struct
       st.col <- 0
     in
     let ch = Input.next st.wrapped in
-    if ch = '\n' then next_line st else st.col <- st.col + 1;
+    if Char.is_newline ch then next_line st else st.col <- st.col + 1;
     ch
 
   let skip st = Fn.ignore @@ next st
@@ -279,8 +277,7 @@ end = struct
 
     let get (i : t) =
       let open Input in
-      let parent = Input.parent i.wrapped in
-      get parent i.wrapped
+      Cursor.get i.wrapped
 
     let newline i =
       i.col <- 0;
@@ -330,7 +327,6 @@ end = struct
 
   let parent = Cursor.parent
   let start st = Cursor.create (Input.start st.wrapped) st st.line st.col
-  let get st i = Input.get st.wrapped (Cursor.unwrap i)
 
   let advance st i =
     st.line <- Cursor.line i;

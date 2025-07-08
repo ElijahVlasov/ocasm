@@ -8,6 +8,7 @@ module type C = sig
   val step_unchecked : t -> unit
   val back : t -> bool
   val back_unchecked : t -> unit
+  val get : t -> char
 end
 
 module type S = sig
@@ -22,7 +23,6 @@ module type S = sig
 
   val parent : Cursor.t -> t
   val start : t -> Cursor.t
-  val get : t -> Cursor.t -> char
   val advance : t -> Cursor.t -> unit
 end
 
