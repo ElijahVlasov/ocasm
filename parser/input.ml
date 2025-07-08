@@ -1,7 +1,7 @@
 open Base
 open Ocasm_utils
 
-module type C = sig
+module type C0 = sig
   type t
 
   val next : t -> char option
@@ -12,6 +12,14 @@ module type C = sig
   val get : t -> char
 end
 
+module type C = sig
+  include C0
+
+  type input
+
+  val create : input -> t
+end
+
 module type S = sig
   type t
 
@@ -20,10 +28,9 @@ module type S = sig
   val skip : t -> unit
   val close : t -> unit
 
-  module Cursor : C
+  module Cursor : C with type input := t
 
   val parent : Cursor.t -> t
-  val start : t -> Cursor.t
   val advance : t -> Cursor.t -> unit
 end
 
@@ -57,8 +64,8 @@ end = struct
   module Cursor = struct
     type t = { parent : string_input; mutable pos : int }
 
+    let create parent = { parent; pos = parent.cursor }
     let parent i = i.parent
-    let create parent pos = { parent; pos }
     let get i = String.unsafe_get i.parent.content i.pos
     let pos i = i.pos
 
@@ -81,7 +88,6 @@ end = struct
   end
 
   let parent = Cursor.parent
-  let start st = Cursor.create st st.cursor
   let advance st i = st.cursor <- Cursor.pos i
 end
 
@@ -179,7 +185,7 @@ end = struct
 
     let parent i = i.parent
     let pos i = i.pos
-    let create parent pos = { parent; pos = ref pos }
+    let create parent = { parent; pos = ref parent.cursor }
 
     let get i =
       let buf =
@@ -216,7 +222,6 @@ end = struct
   end
 
   let parent = Cursor.parent
-  let start st = Cursor.create st st.cursor
 
   let advance st i =
     let open Cursor in
@@ -262,6 +267,8 @@ end = struct
   let close st = Input.close st.wrapped
 
   module Cursor = struct
+    type input = t
+
     type t = {
       wrapped : Input.Cursor.t;
       parent : Input.t positioned_input;
@@ -270,7 +277,15 @@ end = struct
     }
 
     let parent i = i.parent
-    let create wrapped parent line col = { wrapped; parent; line; col }
+
+    let create (parent : input) =
+      {
+        wrapped = Input.Cursor.create parent.wrapped;
+        parent;
+        line = parent.line;
+        col = parent.col;
+      }
+
     let unwrap i = i.wrapped
     let line i = i.line
     let col i = i.col
@@ -326,7 +341,6 @@ end = struct
   end
 
   let parent = Cursor.parent
-  let start st = Cursor.create (Input.start st.wrapped) st st.line st.col
 
   let advance st i =
     st.line <- Cursor.line i;

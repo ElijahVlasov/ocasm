@@ -1,6 +1,6 @@
 open Base
 
-module type C = sig
+module type C0 = sig
   type t
 
   val next : t -> char option
@@ -11,6 +11,14 @@ module type C = sig
   val get : t -> char
 end
 
+module type C = sig
+  include C0
+
+  type input
+
+  val create : input -> t
+end
+
 module type S = sig
   type t
 
@@ -19,10 +27,9 @@ module type S = sig
   val skip : t -> unit
   val close : t -> unit
 
-  module Cursor : C
+  module Cursor : C with type input := t
 
   val parent : Cursor.t -> t
-  val start : t -> Cursor.t
   val advance : t -> Cursor.t -> unit
 end
 
