@@ -1,5 +1,15 @@
 open Base
 
+module type C = sig
+  type t
+
+  val next : t -> char option
+  val step : t -> bool
+  val step_unchecked : t -> unit
+  val back : t -> bool
+  val back_unchecked : t -> unit
+end
+
 module type S = sig
   type t
 
@@ -8,18 +18,9 @@ module type S = sig
   val skip : t -> unit
   val close : t -> unit
 
-  module Cursor : sig
-    type parent_t := t
-    type t
+  module Cursor : C
 
-    val parent : t -> parent_t
-    val next : t -> char option
-    val step : t -> bool
-    val step_unchecked : t -> unit
-    val back : t -> bool
-    val back_unchecked : t -> unit
-  end
-
+  val parent : Cursor.t -> t
   val start : t -> Cursor.t
   val get : t -> Cursor.t -> char
   val advance : t -> Cursor.t -> unit
