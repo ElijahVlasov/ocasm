@@ -1,4 +1,5 @@
 open Base
+open Ocasm_utils
 
 module type S = sig
   type t
@@ -7,18 +8,36 @@ module type S = sig
   val peek : t -> char
   val skip : t -> unit
   val close : t -> unit
+
+  module Cursor : sig
+    type parent_t := t
+    type t
+
+    val parent : t -> parent_t
+    val next : t -> char option
+    val step : t -> bool
+    val step_unchecked : t -> unit
+    val back : t -> bool
+    val back_unchecked : t -> unit
+  end
+
+  val start : t -> Cursor.t
+  val get : t -> Cursor.t -> char
+  val advance : t -> Cursor.t -> unit
 end
 
 type 'a t = (module S with type t = 'a)
 
 let eof = '\x00'
 
+type string_input = { content : string; mutable cursor : int }
+
 module StringInput : sig
   include S
 
   val create : content:string -> t
 end = struct
-  type t = { content : string; mutable cursor : int }
+  type t = string_input
 
   let peek st =
     if st.cursor < String.length st.content then
@@ -33,20 +52,54 @@ end = struct
   let skip st = Fn.ignore @@ next st
   let create ~content = { content; cursor = 0 }
   let close st = ()
+
+  module Cursor = struct
+    type t = { parent : string_input; mutable pos : int }
+
+    let is_last i = i.pos = String.length i.parent.content
+    let parent i = i.parent
+    let create parent pos = { parent; pos }
+    let get i = String.get i.parent.content i.pos
+    let pos i = i.pos
+
+    let next i =
+      let next_pos = i.pos + 1 in
+      if next_pos = String.length i.parent.content then None
+      else (
+        i.pos <- next_pos;
+        Some (String.unsafe_get i.parent.content i.pos))
+
+    let step i = Option.is_some @@ next i
+
+    let back i =
+      if i.pos = i.parent.cursor then false
+      else (
+        i.pos <- i.pos - 1;
+        true)
+
+    let step_unchecked i = i.pos <- i.pos + 1
+    let back_unchecked i = i.pos <- i.pos - 1
+  end
+
+  let start st = Cursor.create st st.cursor
+  let get st i = Cursor.get i
+  let advance st i = st.cursor <- Cursor.pos i
 end
+
+type file_input = {
+  mutable buf1 : bytes;
+  mutable buf2 : bytes;
+  mutable cursor : int;
+  mutable file_pos : int;
+  in_ch : Stdlib.In_channel.t;
+}
 
 module FileInput : sig
   include S
 
   val create : path:string -> t
 end = struct
-  type t = {
-    mutable buf1 : bytes;
-    mutable buf2 : bytes;
-    mutable cursor : int;
-    mutable file_pos : int;
-    in_ch : Stdlib.In_channel.t;
-  }
+  type t = file_input
 
   let chunk_len = 4096
 
@@ -106,6 +159,66 @@ end = struct
     st
 
   let close st = Stdlib.In_channel.close st.in_ch
+
+  module Cursor = struct
+    module Pointer = struct
+      type t = int ref
+
+      let max_ptr = (chunk_len * 2) - 1
+      let is_last i = !i = max_ptr
+      let is_out_of_bounds i = !i = max_ptr + 1
+      let inc_unsafe i = i := !i + 1
+      let inc i = if is_last i then () else inc_unsafe i
+      let dec_unsafe i = i := !i - 1
+      let dec i = if !i = 0 then () else dec_unsafe i
+      let buffer_flag_mask = chunk_len
+      let is_second_buffer i = not @@ (!i land buffer_flag_mask = 0)
+      let is_first_buffer i = !i land buffer_flag_mask = 0
+      let ind i = !i land max_ptr
+    end
+
+    type t = { parent : file_input; pos : Pointer.t }
+
+    let parent i = i.parent
+    let pos i = i.pos
+    let create parent pos = { parent; pos = ref pos }
+
+    let get i =
+      let buf =
+        if Pointer.is_first_buffer i.pos then i.parent.buf1 else i.parent.buf2
+      in
+      let ind = Pointer.ind i.pos in
+      Bytes.get buf ind
+
+    let is_last i = Char.equal (get i) eof || Pointer.is_last i.pos
+
+    let next i =
+      if Pointer.is_out_of_bounds i.pos then None
+      else (
+        Pointer.inc_unsafe i.pos;
+        Some (get i))
+
+    let step i = Option.is_some @@ next i
+    let step_unchecked i = Pointer.inc_unsafe i.pos
+
+    let back i =
+      if !(i.pos) = i.parent.cursor then false
+      else (
+        Pointer.dec i.pos;
+        true)
+
+    let back_unchecked i = Pointer.dec_unsafe i.pos
+  end
+
+  let start st = Cursor.create st st.cursor
+  let get _ i = Cursor.get i
+
+  let advance st i =
+    let open Cursor in
+    let open Cursor.Pointer in
+    let ind = ind i.pos in
+    if is_first_buffer i.pos then () else fetch_chunk st;
+    st.cursor <- ind
 end
 
 let with_input : type a b. a t -> a -> f:(a -> b) -> b =
@@ -113,13 +226,19 @@ let with_input : type a b. a t -> a -> f:(a -> b) -> b =
   let module I = (val inp_m : S with type t = a) in
   Exn.protect ~finally:(fun () -> I.close inp) ~f:(fun () -> f inp)
 
+type 'a positioned_input = {
+  wrapped : 'a;
+  mutable line : int;
+  mutable col : int;
+}
+
 module MakePos (Input : S) : sig
   include S
 
   val create : Input.t -> t
   val pos : t -> int * int
 end = struct
-  type t = { wrapped : Input.t; mutable line : int; mutable col : int }
+  type t = Input.t positioned_input
 
   let peek st = Input.peek st.wrapped
 
@@ -137,4 +256,77 @@ end = struct
   let pos st = (st.line, st.col)
   let create wrapped = { wrapped; line = 0; col = 0 }
   let close st = Input.close st.wrapped
+
+  module Cursor = struct
+    type t = {
+      wrapped : Input.Cursor.t;
+      parent : Input.t positioned_input;
+      mutable line : int;
+      mutable col : int;
+    }
+
+    let parent i = i.parent
+    let create wrapped parent line col = { wrapped; parent; line; col }
+    let unwrap i = i.wrapped
+    let line i = i.line
+    let col i = i.col
+
+    let get (i : t) =
+      let open Input in
+      let parent = Cursor.parent i.wrapped in
+      get parent i.wrapped
+
+    let newline i =
+      i.col <- 0;
+      i.line <- i.line + 1
+
+    let next_col i = i.col <- i.col + 1
+
+    let next (i : t) =
+      let ch = get i in
+      let open Input in
+      match Cursor.next i.wrapped with
+      | Some _ as res ->
+          if Char.is_newline ch then newline i else next_col i;
+          res
+      | x -> x
+
+    let step i =
+      let ch = get i in
+      if Char.is_newline ch then
+        if Input.Cursor.step i.wrapped then (
+          newline i;
+          true)
+        else false
+      else Input.Cursor.step i.wrapped
+
+    let step_unchecked i =
+      let ch = get i in
+      if Char.is_newline ch then newline i;
+      Input.Cursor.step_unchecked i.wrapped
+
+    let back i =
+      if Input.Cursor.back i.wrapped then (
+        if Char.is_newline (get i) then (
+          i.col <- 0;
+          i.line <- i.line - 1)
+        else i.col <- i.col - 1;
+        true)
+      else false
+
+    let back_unchecked i =
+      Input.Cursor.back_unchecked i.wrapped;
+      if Char.is_newline (get i) then (
+        i.col <- 0;
+        i.line <- i.line - 1)
+      else i.col <- i.col - 1
+  end
+
+  let start st = Cursor.create (Input.start st.wrapped) st st.line st.col
+  let get st i = Input.get st.wrapped (Cursor.unwrap i)
+
+  let advance st i =
+    st.line <- Cursor.line i;
+    st.col <- Cursor.col i;
+    Input.advance st.wrapped (Cursor.unwrap i)
 end

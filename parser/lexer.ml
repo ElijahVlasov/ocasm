@@ -15,7 +15,6 @@ module Token = struct
     | LBracket
     | LCurly
     | LSquare
-    | Number_label of string
     | Opcode of string
     | Operand of string
     | Percent
@@ -26,6 +25,8 @@ module Token = struct
     | Symbol_or_directive of (string * string)
     | Symbol_or_opcode of (string * string)
   [@@deriving eq, show]
+
+  let is_eof = function End_of_file -> true | _ -> false
 end
 
 type 'a t = {
@@ -181,3 +182,16 @@ let create inp_m inp =
     content = Buffer.create 1024;
     lower_case_content = Buffer.create 1024;
   }
+
+let to_seq lexer =
+  let open Base.Sequence.Generator in
+  let open Token in
+  let rec consume_tokens () =
+    match next_token lexer with
+    | End_of_file -> yield End_of_file
+    | token -> yield token >>= consume_tokens
+  in
+  run @@ consume_tokens ()
+
+let to_list : type a. a t -> Token.t list =
+ fun lexer -> Sequence.to_list (to_seq lexer)

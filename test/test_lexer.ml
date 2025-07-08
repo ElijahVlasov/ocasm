@@ -23,14 +23,8 @@ let test_multiple_tokens content expected () =
     (module I)
     input
     ~f:(fun inp ->
-      let rec consume lexer =
-        let ( = ) = Lexer.Token.equal in
-        let next = Lexer.next_token lexer in
-        if next = Lexer.Token.End_of_file then [ Lexer.Token.End_of_file ]
-        else next :: consume lexer
-      in
       let lexer = Lexer.create (module I) inp in
-      let got = consume lexer in
+      let got = Lexer.to_list lexer in
       Alcotest.check (Alcotest.list token) "Tokens don't coincide" expected got)
 
 let tests_single_token =
