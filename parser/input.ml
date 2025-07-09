@@ -20,12 +20,11 @@ module type C = sig
   val create : input -> t
 end
 
-module type S = sig
+module type S0 = sig
   type t
 
   val next : t -> char
   val peek : t -> char
-  val skip : t -> unit
   val close : t -> unit
 
   module Cursor : C with type input := t
@@ -33,11 +32,35 @@ module type S = sig
   val advance : t -> Cursor.t -> unit
 end
 
-type 'a t = (module S with type t = 'a)
+module type S = sig
+  include S0
+
+  val skip : t -> unit
+  val next_n_times : n:int -> t -> char
+  val skip_n_times : n:int -> t -> unit
+  val read_buf : t -> Buffer.t -> unit
+end
 
 let eof = '\x00'
 
-module StringInput = struct
+module MkS (S0 : S0) = struct
+  include S0
+
+  let skip = Fn.compose Fn.ignore S0.next
+  let next_n_times ~n st = Fn.apply_n_times ~n (fun _ -> next st) '\x00'
+  let skip_n_times ~n st = Fn.apply_n_times ~n (fun _ -> skip st) ()
+
+  let rec read_buf st buf =
+    let ( <> ) = Char.( <> ) in
+    let next_ch = next st in
+    if next_ch <> eof then (
+      Buffer.add_char buf next_ch;
+      read_buf st buf)
+end
+
+type 'a t = (module S with type t = 'a)
+
+module StringInput0 = struct
   type t = { content : string; mutable cursor : int }
 
   let peek st =
@@ -50,7 +73,6 @@ module StringInput = struct
     st.cursor <- st.cursor + 1;
     next_ch
 
-  let skip st = Fn.ignore @@ next st
   let create ~content = { content; cursor = 0 }
   let close st = ()
 
@@ -84,7 +106,12 @@ module StringInput = struct
     st.cursor <- i.pos
 end
 
-module FileInput = struct
+module StringInput = struct
+  include StringInput0
+  include MkS (StringInput0)
+end
+
+module FileInput0 = struct
   type t = {
     mutable buf1 : bytes;
     mutable buf2 : bytes;
@@ -129,8 +156,6 @@ module FileInput = struct
         st.cursor <- 0)
       else st.cursor <- st.cursor + 1;
     next_ch
-
-  let skip st = Fn.ignore @@ next st
 
   let create ~path =
     let module I = Stdlib.In_channel in
@@ -214,11 +239,16 @@ module FileInput = struct
     st.cursor <- ind
 end
 
+module FileInput = struct
+  include MkS (FileInput0)
+  include FileInput0
+end
+
 let with_input (type a) inp_m inp ~f =
   let module I = (val inp_m : S with type t = a) in
   Exn.protect ~finally:(fun () -> I.close inp) ~f:(fun () -> f inp)
 
-module MakePositioned (Input : S) = struct
+module MakePositioned0 (Input : S) = struct
   module PF = Positioned.MakePositionedForward (Input)
   include PF
 
@@ -229,7 +259,6 @@ module MakePositioned (Input : S) = struct
     PF.step st ch;
     ch
 
-  let skip st = Fn.ignore @@ next st
   let create parent = create parent
   let close st = Input.close (unwrap st)
 
@@ -276,4 +305,10 @@ module MakePositioned (Input : S) = struct
     let open Cursor in
     PF.set_pos st (line i) (col i);
     Input.advance (PF.unwrap st) (unwrap i)
+end
+
+module MakePositioned (Input : S) = struct
+  module X = MakePositioned0 (Input)
+  include MkS (X)
+  include X
 end

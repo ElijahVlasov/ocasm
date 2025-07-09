@@ -2,27 +2,28 @@ open Alcotest
 open Base
 open Ocasm_parser
 
+let short_file = "assets/input/short_file.txt"
+let long_file_1 = "assets/input/long_file_1.txt"
+let long_file_2 = "assets/input/long_file_2.txt"
+let long_file_3 = "assets/input/long_file_3.txt"
+let multiline = "assets/input/multilines.txt"
+
 let test_string_input_first () =
   let module I = Input.StringInput in
   let content = "1 2 3 4 5 6 7 8 9\n 1 2 3 4 5 6 7 8 9" in
   let input = I.create ~content in
   let expected = '1' in
   let result = I.next input in
-  Alcotest.check char "First char" expected result
+  Alcotest.check char "The first read char is wrong" expected result
 
 let test_string_input_endline () =
   let module I = Input.StringInput in
   let module F = Base.Fn in
   let content = "1 2 3 4 5 6 7 8 9\n 1 2 3 4 5 6 7 8 9" in
   let input = I.create ~content in
-  F.apply_n_times ~n:17
-    (fun () ->
-      let _ = I.next input in
-      ())
-    ();
   let expected = '\n' in
-  let result = I.next input in
-  Alcotest.check char "Expected endline" expected result
+  let result = I.next_n_times ~n:18 input in
+  Alcotest.check char "Expected '\\n'" expected result
 
 let test_file_input_entire_file path () =
   let expected =
@@ -31,23 +32,15 @@ let test_file_input_entire_file path () =
   in
   let result =
     let module I = Input.FileInput in
-    let rec read input buf =
-      let ( = ) = Char.equal in
-      let next_ch = I.next input in
-      if next_ch = Input.eof then ()
-      else (
-        Buffer.add_char buf next_ch;
-        read input buf)
-    in
     Input.with_input
       (module I)
       (I.create ~path)
       ~f:(fun input ->
         let buf = Buffer.create (String.length expected) in
-        read input buf;
+        I.read_buf input buf;
         Buffer.contents buf)
   in
-  Alcotest.check string "expected to be same strings" expected result
+  Alcotest.check string "Expected to be same strings" expected result
 
 let test_cursor_back_forth (type a) csr_m (csr : a) ?buf_len expected =
   let module C = (val csr_m : Input.C0 with type t = a) in
@@ -82,8 +75,7 @@ let test_string_input_cursor_back_forth_two_chars_forward () =
   let module I = Input.StringInput in
   let input =
     let input = I.create ~content in
-    I.skip input;
-    I.skip input;
+    I.skip_n_times ~n:2 input;
     input
   in
   let csr = I.Cursor.create input in
@@ -120,7 +112,7 @@ let test_long_file_input_cursor_back_forth path () =
   test_file_input_cursor_back_forth expected path
 
 let test_line_col_numbers () =
-  let path = "assets/input/multilines.txt" in
+  let path = multiline in
   let module I = Input.FileInput in
   let input = I.create ~path in
   let module I = Input.MakePositioned (Input.FileInput) in
@@ -144,7 +136,7 @@ let test_line_col_numbers () =
       let positions = List.cons pos positions in
       Alcotest.check
         (list (pair int int))
-        "Positions in a file"
+        "Cursor checkpoints do not match"
         [ (3, 3); (2, 2) ]
         positions)
 
@@ -156,29 +148,25 @@ let test_string_input =
 
 let test_file_input =
   [
-    test_case "Short File" `Quick
-    @@ test_file_input_entire_file "assets/input/short_file.txt";
-    test_case "Long file 1" `Quick
-    @@ test_file_input_entire_file "assets/input/long_file_1.txt";
-    test_case "Long file 2" `Quick
-    @@ test_file_input_entire_file "assets/input/long_file_2.txt";
-    test_case "Long file 3" `Quick
-    @@ test_file_input_entire_file "assets/input/long_file_3.txt";
+    test_case "Short File" `Quick @@ test_file_input_entire_file short_file;
+    test_case "Long file 1" `Quick @@ test_file_input_entire_file long_file_1;
+    test_case "Long file 2" `Quick @@ test_file_input_entire_file long_file_2;
+    test_case "Long file 3" `Quick @@ test_file_input_entire_file long_file_3;
   ]
 
 let test_string_input_cursor =
   [
     test_case "Cursor back and forth" `Quick test_string_input_cursor_back_forth;
-    test_case "Cursor back and forth starting two chars into the string" `Quick
+    test_case "Cursor back and forth 2 chars later" `Quick
       test_string_input_cursor_back_forth_two_chars_forward;
   ]
 
 let test_file_input_cursor =
   [
     test_case "Cursor back and forth for a short file" `Quick
-    @@ test_short_file_input_cursor_back_forth "assets/input/short_file.txt";
+    @@ test_short_file_input_cursor_back_forth short_file;
     test_case "Cursor back and forth for a long file" `Quick
-    @@ test_long_file_input_cursor_back_forth "assets/input/long_file_1.txt";
+    @@ test_long_file_input_cursor_back_forth long_file_1;
   ]
 
 let test_positioned_input =
