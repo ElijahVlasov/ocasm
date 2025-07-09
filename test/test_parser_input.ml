@@ -119,6 +119,35 @@ let test_long_file_input_cursor_back_forth path () =
   in
   test_file_input_cursor_back_forth expected path
 
+let test_line_col_numbers () =
+  let path = "assets/input/multilines.txt" in
+  let module I = Input.FileInput in
+  let input = I.create ~path in
+  let module I = Input.MakePositioned (Input.FileInput) in
+  let input = I.create input in
+  Input.with_input
+    (module I)
+    input
+    ~f:(fun input ->
+      let csr = I.Cursor.create input in
+      let move n =
+        Fn.apply_n_times ~n (fun () -> Fn.ignore @@ I.Cursor.step csr) ()
+      in
+      let positions = [] in
+      move 15;
+      I.advance input csr;
+      let pos = I.pos input in
+      let positions = List.cons pos positions in
+      move 26;
+      I.advance input csr;
+      let pos = I.pos input in
+      let positions = List.cons pos positions in
+      Alcotest.check
+        (list (pair int int))
+        "Positions in a file"
+        [ (3, 3); (2, 2) ]
+        positions)
+
 let test_string_input =
   [
     test_case "StringInput.next 1" `Quick test_string_input_first;
@@ -152,6 +181,9 @@ let test_file_input_cursor =
     @@ test_long_file_input_cursor_back_forth "assets/input/long_file_1.txt";
   ]
 
+let test_positioned_input =
+  [ test_case "Test correct positioning" `Quick test_line_col_numbers ]
+
 let () =
   Alcotest.run "Parser input"
     [
@@ -159,4 +191,5 @@ let () =
       ("FileInput", test_file_input);
       ("Cursor StringInput", test_string_input_cursor);
       ("Cursor FileInput", test_file_input_cursor);
+      ("Test positioned input", test_positioned_input);
     ]

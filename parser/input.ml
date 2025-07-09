@@ -37,14 +37,12 @@ type 'a t = (module S with type t = 'a)
 
 let eof = '\x00'
 
-type string_input = { content : string; mutable cursor : int }
-
 module StringInput : sig
   include S
 
   val create : content:string -> t
 end = struct
-  type t = string_input
+  type t = { content : string; mutable cursor : int }
 
   let peek st =
     if st.cursor < String.length st.content then
@@ -61,7 +59,8 @@ end = struct
   let close st = ()
 
   module Cursor = struct
-    type t = { parent : string_input; mutable pos : int }
+    type input = t
+    type t = { parent : input; mutable pos : int }
 
     let create parent = { parent; pos = parent.cursor }
     let get i = String.unsafe_get i.parent.content i.pos
@@ -89,20 +88,18 @@ end = struct
     st.cursor <- i.pos
 end
 
-type file_input = {
-  mutable buf1 : bytes;
-  mutable buf2 : bytes;
-  mutable cursor : int;
-  mutable file_pos : int;
-  in_ch : Stdlib.In_channel.t;
-}
-
 module FileInput : sig
   include S
 
   val create : path:string -> t
 end = struct
-  type t = file_input
+  type t = {
+    mutable buf1 : bytes;
+    mutable buf2 : bytes;
+    mutable cursor : int;
+    mutable file_pos : int;
+    in_ch : Stdlib.In_channel.t;
+  }
 
   let chunk_len = 4096
 
@@ -178,7 +175,8 @@ end = struct
       let ind i = !i land buffer_ind_mask
     end
 
-    type t = { parent : file_input; pos : Pointer.t }
+    type input = t
+    type t = { parent : input; pos : Pointer.t }
 
     let create parent = { parent; pos = ref parent.cursor }
 
@@ -228,97 +226,78 @@ let with_input (type a) inp_m inp ~f =
   let module I = (val inp_m : S with type t = a) in
   Exn.protect ~finally:(fun () -> I.close inp) ~f:(fun () -> f inp)
 
-type 'a positioned_input = {
-  wrapped : 'a;
-  mutable line : int;
-  mutable col : int;
-}
+module MakePositioned (Input : S) : sig
+  type t
 
-module MakePos (Input : S) : sig
-  include S
+  module Cursor : sig
+    include C with type input := t
+    include Positioned.S0 with type t := t
+  end
+
+  include S with type t := t with module Cursor := Cursor
+  include Positioned.S0 with type t := t
 
   val create : Input.t -> t
-  val pos : t -> int * int
 end = struct
-  type t = Input.t positioned_input
+  module PF = Positioned.MakePositionedForward (Input)
 
-  let peek st = Input.peek st.wrapped
+  type t = PF.t
+
+  let peek st = Input.peek (PF.unwrap st)
 
   let next st =
-    let next_line st =
-      st.line <- st.line + 1;
-      st.col <- 0
-    in
-    let ch = Input.next st.wrapped in
-    if Char.is_newline ch then next_line st else st.col <- st.col + 1;
+    let ch = Input.next (PF.unwrap st) in
+    PF.step st ch;
     ch
 
   let skip st = Fn.ignore @@ next st
-  let pos st = (st.line, st.col)
-  let create wrapped = { wrapped; line = 0; col = 0 }
-  let close st = Input.close st.wrapped
+  let pos = PF.pos
+  let line = PF.line
+  let col = PF.col
+  let create parent = PF.create parent
+  let close st = Input.close (PF.unwrap st)
 
   module Cursor = struct
-    type input = t
-    type t = { wrapped : Input.Cursor.t; mutable line : int; mutable col : int }
+    include Positioned.MakePositioned (Input.Cursor)
+    module C = Input.Cursor
 
-    let create (parent : input) =
-      {
-        wrapped = Input.Cursor.create parent.wrapped;
-        line = parent.line;
-        col = parent.col;
-      }
+    let create parent =
+      let parent_csr = C.create (PF.unwrap parent) in
+      let line = PF.line parent in
+      let col = PF.col parent in
+      create parent_csr ~line ~col
 
-    let get (i : t) =
-      let open Input in
-      Cursor.get i.wrapped
-
-    let newline i =
-      i.col <- 0;
-      i.line <- i.line + 1
-
-    let next_col i = i.col <- i.col + 1
+    let get i = C.get (unwrap i)
 
     let next (i : t) =
       let ch = get i in
-      let open Input in
-      match Cursor.next i.wrapped with
-      | Some _ as res ->
-          if Char.is_newline ch then newline i else next_col i;
-          res
-      | x -> x
-
-    let step i =
-      let ch = get i in
-      let has_stepped = Input.Cursor.step i.wrapped in
-      if has_stepped && Char.is_newline ch then newline i;
-      has_stepped
+      let mb_next = C.next (unwrap i) in
+      if Option.is_some mb_next then step i ch;
+      mb_next
 
     let step_unchecked i =
       let ch = get i in
-      if Char.is_newline ch then newline i;
-      Input.Cursor.step_unchecked i.wrapped
+      step i ch;
+      C.step_unchecked (unwrap i)
 
-    let back i =
-      let has_backed = Input.Cursor.back i.wrapped in
-      if has_backed then
-        if Char.is_newline (get i) then (
-          i.col <- 0;
-          i.line <- i.line - 1)
-        else i.col <- i.col - 1;
-      has_backed
+    let step i =
+      let ch = get i in
+      let has_stepped = C.step (unwrap i) in
+      if has_stepped then step i ch;
+      has_stepped
 
     let back_unchecked i =
-      Input.Cursor.back_unchecked i.wrapped;
-      if Char.is_newline (get i) then (
-        i.col <- 0;
-        i.line <- i.line - 1)
-      else i.col <- i.col - 1
+      C.back_unchecked (unwrap i);
+      back i (get i)
+
+    let back i =
+      let has_backed = C.back (unwrap i) in
+      if has_backed then back i (get i);
+      has_backed
   end
 
-  let advance (st : t) (i : Cursor.t) =
+  let advance st i =
     let open Cursor in
-    st.line <- i.line;
-    st.col <- i.col;
-    Input.advance st.wrapped i.wrapped
+    PF.set_pos st (line i) (col i);
+    Input.advance (PF.unwrap st) (unwrap i)
 end

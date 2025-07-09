@@ -50,9 +50,16 @@ end
 
 val with_input : 'a t -> 'a -> f:('a -> 'b) -> 'b
 
-module MakePos (Input : S) : sig
-  include S
+module MakePositioned (Input : S) : sig
+  type t
+
+  module Cursor : sig
+    include C with type input := t
+    include Positioned.S0 with type t := t
+  end
+
+  include S with type t := t with module Cursor := Cursor
+  include Positioned.S0 with type t := t
 
   val create : Input.t -> t
-  val pos : t -> int * int
 end
