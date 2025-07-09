@@ -37,11 +37,7 @@ type 'a t = (module S with type t = 'a)
 
 let eof = '\x00'
 
-module StringInput : sig
-  include S
-
-  val create : content:string -> t
-end = struct
+module StringInput = struct
   type t = { content : string; mutable cursor : int }
 
   let peek st =
@@ -88,11 +84,7 @@ end = struct
     st.cursor <- i.pos
 end
 
-module FileInput : sig
-  include S
-
-  val create : path:string -> t
-end = struct
+module FileInput = struct
   type t = {
     mutable buf1 : bytes;
     mutable buf2 : bytes;
@@ -226,36 +218,20 @@ let with_input (type a) inp_m inp ~f =
   let module I = (val inp_m : S with type t = a) in
   Exn.protect ~finally:(fun () -> I.close inp) ~f:(fun () -> f inp)
 
-module MakePositioned (Input : S) : sig
-  type t
-
-  module Cursor : sig
-    include C with type input := t
-    include Positioned.S0 with type t := t
-  end
-
-  include S with type t := t with module Cursor := Cursor
-  include Positioned.S0 with type t := t
-
-  val create : Input.t -> t
-end = struct
+module MakePositioned (Input : S) = struct
   module PF = Positioned.MakePositionedForward (Input)
+  include PF
 
-  type t = PF.t
-
-  let peek st = Input.peek (PF.unwrap st)
+  let peek st = Input.peek (unwrap st)
 
   let next st =
-    let ch = Input.next (PF.unwrap st) in
+    let ch = Input.next (unwrap st) in
     PF.step st ch;
     ch
 
   let skip st = Fn.ignore @@ next st
-  let pos = PF.pos
-  let line = PF.line
-  let col = PF.col
-  let create parent = PF.create parent
-  let close st = Input.close (PF.unwrap st)
+  let create parent = create parent
+  let close st = Input.close (unwrap st)
 
   module Cursor = struct
     include Positioned.MakePositioned (Input.Cursor)

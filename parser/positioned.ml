@@ -29,15 +29,7 @@ module type S = sig
   val back_unchecked : t -> unit
 end
 
-module MakePositionedForward (T : T) : sig
-  type t
-
-  include F with type t := t
-  include S0_M with type t := t
-
-  val create : ?line:int -> ?col:int -> T.t -> t
-  val unwrap : t -> T.t
-end = struct
+module MakePositionedForward (T : T) = struct
   type t = { unwrap : T.t; mutable line : int; mutable col : int }
   [@@deriving fields]
 
@@ -61,14 +53,7 @@ end = struct
   let step_unchecked x = x.col <- x.col + 1
 end
 
-module MakePositioned (T : T) : sig
-  type t
-
-  include S with type t := t
-
-  val create : ?line:int -> ?col:int -> T.t -> t
-  val unwrap : t -> T.t
-end = struct
+module MakePositioned (T : T) = struct
   type t = {
     unwrap : T.t;
     mutable line : int;
