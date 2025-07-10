@@ -1,34 +1,6 @@
 open Base
 open Ocasm_utils
 
-module Token = struct
-  type t =
-    | Colon
-    | Comma
-    | Bin of string
-    | Oct of string
-    | Dec of string
-    | Hex of string
-    | End_of_file
-    | End_of_line
-    | ExclamaitionMark
-    | LBracket
-    | LCurly
-    | LSquare
-    | Opcode of string
-    | Operand of string
-    | Percent
-    | RBracket
-    | RCurly
-    | RSquare
-    | Symbol of string
-    | Symbol_or_directive of (string * string)
-    | Symbol_or_opcode of (string * string)
-  [@@deriving eq, show]
-
-  let is_eof = function End_of_file -> true | _ -> false
-end
-
 type 'a t = {
   inp_m : 'a Input.t;
   inp : 'a;
@@ -44,18 +16,15 @@ let special_symbols =
   Ocasm_utils.Lut.create
     [ ':'; '\\'; '"'; '\''; '!'; ';'; '('; ')'; '['; ']'; '{'; '}'; Input.eof ]
 
-let next : type a. a t -> char =
- fun st ->
+let next (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a) in
   I.next st.inp
 
-let peek : type a. a t -> char =
- fun st ->
+let peek (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a) in
   I.peek st.inp
 
-let skip : type a. a t -> unit =
- fun st ->
+let skip (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a) in
   I.skip st.inp
 
@@ -158,7 +127,7 @@ let next_token st =
   let open Token in
   let ch = skip_comments_and_whitespaces st in
   match ch with
-  | '\n' -> End_of_line
+  | '\n' -> Eol
   | '0' .. '9' -> number_start st ch
   | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st ch)
   | '.' -> Symbol_or_directive (directive_started st ch)
@@ -172,7 +141,7 @@ let next_token st =
   | '}' -> RCurly
   | '!' -> ExclamaitionMark
   | '%' -> Percent
-  | ch when ch = Input.eof -> End_of_file
+  | ch when ch = Input.eof -> Eof
   | _ -> failwith "Unknown symbol"
 
 let create inp_m inp =
@@ -188,7 +157,7 @@ let to_seq lexer =
   let open Token in
   let rec consume_tokens () =
     match next_token lexer with
-    | End_of_file -> yield End_of_file
+    | Eof -> yield Eof
     | token -> yield token >>= consume_tokens
   in
   run @@ consume_tokens ()

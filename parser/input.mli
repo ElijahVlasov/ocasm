@@ -35,12 +35,12 @@ module type S = sig
   include S0
 
   val skip : t -> unit
-  val next_n_times : n:int -> t -> char 
+  val next_n_times : n:int -> t -> char
   val skip_n_times : n:int -> t -> unit
   val read_buf : t -> Buffer.t -> unit
 end
 
-module MkS (S0 : S0) : S with type t := S0.t 
+module MkS (S0 : S0) : S with type t := S0.t
 
 type 'a t = (module S with type t = 'a)
 

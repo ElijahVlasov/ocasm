@@ -1,9 +1,9 @@
 open Ocasm_parser
 
 let token_fmt fmt token =
-  Stdlib.Format.fprintf fmt "%s" (Lexer.Token.show token)
+  Stdlib.Format.fprintf fmt "'%s'" (Token.to_string token)
 
-let token = Alcotest.testable token_fmt Lexer.Token.equal
+let token = Alcotest.testable token_fmt Token.equal
 
 let test_single_token content expected () =
   let module I = Ocasm_parser.Input.StringInput in
@@ -28,7 +28,7 @@ let test_multiple_tokens content expected () =
       Alcotest.check (Alcotest.list token) "Tokens don't coincide" expected got)
 
 let tests_single_token =
-  let open Lexer.Token in
+  let open Token in
   [
     ("Curly bracket", `Quick, test_single_token "{}" LCurly);
     ( "Curly bracket with multiline comments",
@@ -41,15 +41,12 @@ let tests_single_token =
   ]
 
 let tests_multiple_tokens =
-  let open Lexer.Token in
+  let open Token in
   [
-    ( "Curly brackets",
-      `Quick,
-      test_multiple_tokens "{}" [ LCurly; RCurly; End_of_file ] );
+    ("Curly brackets", `Quick, test_multiple_tokens "{}" [ LCurly; RCurly; Eof ]);
     ( "Three \\n's",
       `Quick,
-      test_multiple_tokens "\n \n\n"
-        [ End_of_line; End_of_line; End_of_line; End_of_file ] );
+      test_multiple_tokens "\n \n\n" [ Eol; Eol; Eol; Eof ] );
   ]
 
 let () =
