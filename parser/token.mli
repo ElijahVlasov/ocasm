@@ -2,10 +2,10 @@ type t =
   | Colon
   | Semicolon
   | Comma
-  | Bin of string
-  | Oct of string
-  | Dec of string
-  | Hex of string
+  | Bin of int64 array
+  | Oct of int64 array
+  | Dec of int64 array
+  | Hex of int64 array
   | Eof
   | Eol
   | ExclamaitionMark

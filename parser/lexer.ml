@@ -51,10 +51,33 @@ let rec consume_while_true st pred =
     consume_while_true st pred)
   else Buffer.contents st.content
 
-let bin_number st = consume_while_true st Char.is_binary
-let oct_number st = consume_while_true st Char.is_octal
-let dec_number st = consume_while_true st Char.is_digit
-let hex_number st = consume_while_true st Char.is_hex_digit
+let consume_number (type a) st bldr_m bldr is_digit =
+  let module B = (val bldr_m : Number_builder.S with type t = a) in
+  let ch = ref (peek st) in
+  while is_digit !ch do
+    B.feed_exn bldr !ch;
+    skip st;
+    ch := peek st
+  done;
+  B.build bldr
+
+let bin_number st =
+  let open Number_builder in
+  consume_number st (module Bin_builder) (Bin_builder.create ()) Char.is_binary
+
+let oct_number st =
+  let open Number_builder in
+  consume_number st (module Oct_builder) (Oct_builder.create ()) Char.is_octal
+
+let dec_number st =
+  let open Number_builder in
+  consume_number st (module Dec_builder) (Dec_builder.create ()) Char.is_digit
+
+let hex_number st =
+  let open Number_builder in
+  consume_number st
+    (module Hex_builder)
+    (Hex_builder.create ()) Char.is_hex_digit
 
 let number_start st ch =
   let open Token in
@@ -77,7 +100,7 @@ let number_start st ch =
       skip st;
       Buffer.add_char st.content ch;
       Bin (bin_number st))
-    else Dec "0"
+    else Dec (Array.create ~len:1 0L)
   else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =

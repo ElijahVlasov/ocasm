@@ -2,10 +2,10 @@ type t =
   | Colon
   | Semicolon
   | Comma
-  | Bin of string
-  | Oct of string
-  | Dec of string
-  | Hex of string
+  | Bin of int64 array
+  | Oct of int64 array
+  | Dec of int64 array
+  | Hex of int64 array
   | Eof
   | Eol
   | ExclamaitionMark
@@ -47,7 +47,11 @@ let to_string = function
   | Colon -> ":"
   | Semicolon -> ";"
   | Comma -> ","
-  | Bin x | Oct x | Dec x | Hex x -> x
+  | Bin x | Oct x | Dec x | Hex x ->
+      if Array.length x = 1 then Int64.to_string (Array.get x 0)
+      else (
+        Array.iter (fun i -> Stdlib.print_endline (Int64.to_string i)) x;
+        "")
   | Eof -> "\\x00"
   | Eol -> "\\n"
   | ExclamaitionMark -> "!"
