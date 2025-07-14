@@ -1,0 +1,15 @@
+(version 20230213)
+
+(build
+ (progn
+  (when
+   %{pkg-self:dev}
+   (run dune subst))
+  (run dune build -p %{pkg-self:name} -j %{jobs} @install)))
+
+(depends ocaml dune)
+
+(source
+ (fetch
+  (url https://github.com/scemama/ocaml-getopt/archive/20230213.tar.gz)
+  (checksum md5=14a2c956af6145aaf293c62dfa36e099)))

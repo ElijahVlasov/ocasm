@@ -10,4 +10,4 @@ let suite =
     ("Single instruction suite", Test_single_instruction_parsing.suite);
   ]
 
-let () = Alcotest.run "ocasm" suite
+let () = Alcotest.run ~json:true "ocasm" suite

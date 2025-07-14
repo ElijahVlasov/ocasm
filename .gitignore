@@ -1,2 +1,4 @@
 _build
 .nvim.lua
+dev-tools.locks/
+
