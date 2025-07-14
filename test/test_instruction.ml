@@ -250,7 +250,7 @@ let test_fence_i_o () =
     (RawInstruction.of_int 0x0840000fl)
     (RawInstruction.fence i o)
 
-let raw_instruction_decoding_suite =
+let suite =
   [
     ("Test add instruction", `Quick, test_add_x0_x0_x0);
     ("Test add instruction", `Quick, test_add_x1_x2_x3);
@@ -293,7 +293,3 @@ let raw_instruction_decoding_suite =
     ("Test sb instruction", `Quick, test_sb_x1_1_x2);
     ("Test sh instruction", `Quick, test_sh_x1_1_x2);
   ]
-
-let () =
-  Alcotest.run "Instruction Suite"
-    [ ("RawInstruction decoding", raw_instruction_decoding_suite) ]

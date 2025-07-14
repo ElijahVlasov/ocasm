@@ -31,18 +31,13 @@ let test_immediate12_back_and_forth_negative () =
     "immediate12 back and forth negative" (-56l)
     (Immediate12.to_int32 (Option.get (Immediate12.of_int32 (-56l))))
 
-let () =
+let suite =
   let open Alcotest in
-  run "Immediate"
-    [
-      ( "immediate12",
-        [
-          test_case "positive" `Quick test_immediate12_positive;
-          test_case "negative" `Quick test_immediate12_negative;
-          test_case "back and forth" `Quick test_immediate12_back_and_forth;
-          test_case "back and forth negative" `Quick
-            test_immediate12_back_and_forth_negative;
-          test_case "of int32_unchecked" `Quick
-            test_immediate12_of_int32_unchecked;
-        ] );
-    ]
+  [
+    test_case "positive" `Quick test_immediate12_positive;
+    test_case "negative" `Quick test_immediate12_negative;
+    test_case "back and forth" `Quick test_immediate12_back_and_forth;
+    test_case "back and forth negative" `Quick
+      test_immediate12_back_and_forth_negative;
+    test_case "of int32_unchecked" `Quick test_immediate12_of_int32_unchecked;
+  ]

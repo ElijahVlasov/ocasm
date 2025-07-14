@@ -38,6 +38,4 @@ let test_add_add_add () =
   let result = parse_program program in
   Alcotest.check parser_result "add add add" (Ok expected) result
 
-let () =
-  Alcotest.run "Parser Code Snippets"
-    [ ("basic", [ test_case "add add add" `Quick test_add_add_add ]) ]
+let suite = [ test_case "add add add" `Quick test_add_add_add ]

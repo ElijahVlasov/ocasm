@@ -172,12 +172,12 @@ let test_file_input_cursor =
 let test_positioned_input =
   [ test_case "Test correct positioning" `Quick test_line_col_numbers ]
 
-let () =
-  Alcotest.run "Parser input"
+let suite =
+  List.concat
     [
-      ("StringInput", test_string_input);
-      ("FileInput", test_file_input);
-      ("Cursor StringInput", test_string_input_cursor);
-      ("Cursor FileInput", test_file_input_cursor);
-      ("Test positioned input", test_positioned_input);
+      test_string_input;
+      test_file_input;
+      test_string_input_cursor;
+      test_file_input_cursor;
+      test_positioned_input;
     ]

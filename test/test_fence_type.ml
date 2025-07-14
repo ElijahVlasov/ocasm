@@ -31,7 +31,7 @@ let test_show_fence_type_i_o_r_w_i () =
 
 let test_add_comm () = Alcotest.(check fence_type) "add_comm" (i |+ o) (o |+ i)
 
-let fence_type_suite =
+let suite =
   [
     ("Test show fence type", `Quick, test_show_fence_type_i);
     ("Test show fence type", `Quick, test_show_fence_type_i_o);
@@ -40,5 +40,3 @@ let fence_type_suite =
     ("Test show fence type", `Quick, test_show_fence_type_i_o_r_w_i);
     ("Test add comm", `Quick, test_add_comm);
   ]
-
-let () = Alcotest.run "Fence Type Suite" [ ("Fence Type", fence_type_suite) ]

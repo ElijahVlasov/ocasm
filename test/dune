@@ -1,34 +1,6 @@
 (test
- (name test_instruction)
- (libraries rv32 alcotest))
-
-(test
- (name test_fence_type)
- (libraries rv32 alcotest))
-
-(test
- (name test_immediate)
- (libraries rv32 alcotest))
-
-(test
- (name test_single_instruction_parsing)
- (libraries rv32 alcotest))
-
-(test
- (name test_parser_code_snippets)
- (libraries rv32 alcotest))
-
-(test
- (name test_bfd)
- (libraries alcotest ocasm_bfd ctypes)
- (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib -cclib -lbfd))
-
-(test
- (name test_parser_input)
- (libraries alcotest base ocasm_parser)
+ (name test)
+ (libraries alcotest base ctypes rv32 ocasm_bfd ocasm_parser)
+ (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib -cclib -lbfd)
  (deps
   (glob_files assets/input/*)))
-
-(test
- (name test_lexer)
- (libraries alcotest base ocasm_parser))

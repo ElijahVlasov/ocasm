@@ -255,61 +255,43 @@ let test_ebreak () =
   let result = parse_program program in
   check parser_result "Ebreak" (Ok expected) result
 
-let () =
-  run "Single Instruction Parsing"
-    [
-      ( "basic",
-        [
-          test_case "Empty program" `Quick test_empty_program;
-          test_case "Add immediate" `Quick test_add_imm;
-          test_case "Add register" `Quick test_add_reg;
-          test_case "Wrong lexeme" `Quick test_wrong_lexeme;
-          test_case "Invalid syntax" `Quick test_invalid_syntax;
-        ] );
-      ( "arithmetic",
-        [
-          test_case "Subtract" `Quick test_subtract;
-          test_case "And" `Quick test_and;
-          test_case "Or" `Quick test_or;
-          test_case "Xor" `Quick test_xor;
-          test_case "Slt" `Quick test_slt;
-          test_case "Sltu" `Quick test_sltu;
-          test_case "And immediate" `Quick test_andi;
-          test_case "Or immediate" `Quick test_ori;
-          test_case "Xor immediate" `Quick test_xori;
-          test_case "Slt immediate" `Quick test_slti;
-          test_case "Sltu immediate" `Quick test_sltui;
-          test_case "Invalid immediate" `Quick test_invalid_immediate;
-        ] );
-      ( "branch",
-        [
-          test_case "Beq" `Quick test_beq;
-          test_case "Bne" `Quick test_bne;
-          test_case "Blt" `Quick test_blt;
-          test_case "Bge" `Quick test_bge;
-          test_case "Bltu" `Quick test_bltu;
-          test_case "Bgeu" `Quick test_bgeu;
-        ] );
-      ( "load_store",
-        [
-          test_case "Lb" `Quick test_lb;
-          test_case "Lh" `Quick test_lh;
-          test_case "Lw" `Quick test_lw;
-          test_case "Lbu" `Quick test_lbu;
-          test_case "Lhu" `Quick test_lhu;
-          test_case "Sb" `Quick test_sb;
-          test_case "Sh" `Quick test_sh;
-          test_case "Sw" `Quick test_sw;
-        ] );
-      ( "jal",
-        [ test_case "Jal" `Quick test_jal; test_case "Jalr" `Quick test_jalr ]
-      );
-      ( "lui_auipc",
-        [ test_case "Lui" `Quick test_lui; test_case "Auipc" `Quick test_auipc ]
-      );
-      ( "ecall_ebreak",
-        [
-          test_case "Ecall" `Quick test_ecall;
-          test_case "Ebreak" `Quick test_ebreak;
-        ] );
-    ]
+let suite =
+  [
+    test_case "Empty program" `Quick test_empty_program;
+    test_case "Add immediate" `Quick test_add_imm;
+    test_case "Add register" `Quick test_add_reg;
+    test_case "Wrong lexeme" `Quick test_wrong_lexeme;
+    test_case "Invalid syntax" `Quick test_invalid_syntax;
+    test_case "Subtract" `Quick test_subtract;
+    test_case "And" `Quick test_and;
+    test_case "Or" `Quick test_or;
+    test_case "Xor" `Quick test_xor;
+    test_case "Slt" `Quick test_slt;
+    test_case "Sltu" `Quick test_sltu;
+    test_case "And immediate" `Quick test_andi;
+    test_case "Or immediate" `Quick test_ori;
+    test_case "Xor immediate" `Quick test_xori;
+    test_case "Slt immediate" `Quick test_slti;
+    test_case "Sltu immediate" `Quick test_sltui;
+    test_case "Invalid immediate" `Quick test_invalid_immediate;
+    test_case "Beq" `Quick test_beq;
+    test_case "Bne" `Quick test_bne;
+    test_case "Blt" `Quick test_blt;
+    test_case "Bge" `Quick test_bge;
+    test_case "Bltu" `Quick test_bltu;
+    test_case "Bgeu" `Quick test_bgeu;
+    test_case "Lb" `Quick test_lb;
+    test_case "Lh" `Quick test_lh;
+    test_case "Lw" `Quick test_lw;
+    test_case "Lbu" `Quick test_lbu;
+    test_case "Lhu" `Quick test_lhu;
+    test_case "Sb" `Quick test_sb;
+    test_case "Sh" `Quick test_sh;
+    test_case "Sw" `Quick test_sw;
+    test_case "Jal" `Quick test_jal;
+    test_case "Jalr" `Quick test_jalr;
+    test_case "Lui" `Quick test_lui;
+    test_case "Auipc" `Quick test_auipc;
+    test_case "Ecall" `Quick test_ecall;
+    test_case "Ebreak" `Quick test_ebreak;
+  ]

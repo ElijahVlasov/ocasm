@@ -77,9 +77,4 @@ let tests_multiple_tokens =
       test_multiple_tokens "\n \n\n" [ Eol; Eol; Eol; Eof ] );
   ]
 
-let () =
-  Alcotest.run "Lexer tests"
-    [
-      ("Single token", tests_single_token);
-      ("Multiple tokens", tests_multiple_tokens);
-    ]
+let suite = List.concat [ tests_single_token; tests_multiple_tokens ]
