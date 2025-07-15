@@ -51,33 +51,34 @@ let rec consume_while_true st pred =
     consume_while_true st pred)
   else Buffer.contents st.content
 
-let consume_number (type a) st bldr_m bldr is_digit =
+let consume_number (type a) st bldr_m is_digit =
   let module B = (val bldr_m : Number_builder.S with type t = a) in
+  let bldr = B.create () in
   let ch = ref (peek st) in
   while is_digit !ch do
     B.feed_exn bldr !ch;
     skip st;
     ch := peek st
   done;
-  B.build bldr
+  if Char.is_whitespace !ch || Char.is_special_symbol !ch || Char.is_eof !ch
+  then B.build bldr
+  else failwith "Unexpected symbol"
 
 let bin_number st =
   let open Number_builder in
-  consume_number st (module Bin_builder) (Bin_builder.create ()) Char.is_binary
+  consume_number st (module Bin_builder) Char.is_binary
 
 let oct_number st =
   let open Number_builder in
-  consume_number st (module Oct_builder) (Oct_builder.create ()) Char.is_octal
+  consume_number st (module Oct_builder) Char.is_octal
 
 let dec_number st =
   let open Number_builder in
-  consume_number st (module Dec_builder) (Dec_builder.create ()) Char.is_digit
+  consume_number st (module Dec_builder) Char.is_digit
 
 let hex_number st =
   let open Number_builder in
-  consume_number st
-    (module Hex_builder)
-    (Hex_builder.create ()) Char.is_hex_digit
+  consume_number st (module Hex_builder) Char.is_hex_digit
 
 let number_start st ch =
   let open Token in
@@ -104,19 +105,25 @@ let number_start st ch =
   else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =
-  let rec skip_comments_and_whitespaces st ch =
+  let rec skip_comments_and_whitespaces ~has_advanced st ch =
     match ch with
-    | '\t' | ' ' -> skip_comments_and_whitespaces st (next st)
+    | '\t' | ' ' ->
+        skip st;
+        skip_comments_and_whitespaces st (peek st) ~has_advanced:true
     | '#' ->
+        skip st;
         let rec ignore_until_nl st =
           let ch = peek st in
-          if ch = '\n' then ch else ignore_until_nl st
+          if ch = '\n' then true else ignore_until_nl st
         in
         ignore_until_nl st
-    | '/' -> multiline_comment_start st skip_comments_and_whitespaces
-    | _ -> ch
+    | '/' ->
+        skip st;
+        multiline_comment_start st
+          (skip_comments_and_whitespaces ~has_advanced:true)
+    | _ -> has_advanced
   in
-  skip_comments_and_whitespaces st (next st)
+  skip_comments_and_whitespaces ~has_advanced:false st (peek st)
 
 let rec read_name st ch =
   let module Lut = Ocasm_utils.Lut in
@@ -148,24 +155,27 @@ let symbol_started st ch =
 let next_token st =
   let module Lut = Ocasm_utils.Lut in
   let open Token in
-  let ch = skip_comments_and_whitespaces st in
-  match ch with
-  | '\n' -> Eol
-  | '0' .. '9' -> number_start st ch
-  | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st ch)
-  | '.' -> Symbol_or_directive (directive_started st ch)
-  | ',' -> Comma
-  | ':' -> Colon
-  | '(' -> LBracket
-  | ')' -> RBracket
-  | '[' -> LSquare
-  | ']' -> RSquare
-  | '{' -> LCurly
-  | '}' -> RCurly
-  | '!' -> ExclamaitionMark
-  | '%' -> Percent
-  | ch when ch = Input.eof -> Eof
-  | _ -> failwith "Unknown symbol"
+  let has_advanced = skip_comments_and_whitespaces st in
+  if has_advanced then White_space
+  else
+    let ch = next st in
+    match ch with
+    | '\n' -> Eol
+    | '0' .. '9' -> number_start st ch
+    | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st ch)
+    | '.' -> Symbol_or_directive (directive_started st ch)
+    | ',' -> Comma
+    | ':' -> Colon
+    | '(' -> LBracket
+    | ')' -> RBracket
+    | '[' -> LSquare
+    | ']' -> RSquare
+    | '{' -> LCurly
+    | '}' -> RCurly
+    | '!' -> ExclamaitionMark
+    | '%' -> Percent
+    | ch when ch = Input.eof -> Eof
+    | _ -> failwith "Unknown symbol"
 
 let create inp_m inp =
   {

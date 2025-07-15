@@ -33,7 +33,7 @@ let tests_single_token =
     ("Curly bracket", `Quick, test_single_token "{}" LCurly);
     ( "Curly bracket with multiline comments",
       `Quick,
-      test_single_token "/* sdagdgsa \n \n */ /* */{}" LCurly );
+      test_single_token "/* sdagdgsa \n \n */ /* */{}" White_space );
     ( "Binary",
       `Quick,
       test_single_token "0b1010" (Bin (Array.of_list [ 0b1010L ])) );
@@ -74,7 +74,7 @@ let tests_multiple_tokens =
     ("Curly brackets", `Quick, test_multiple_tokens "{}" [ LCurly; RCurly; Eof ]);
     ( "Three \\n's",
       `Quick,
-      test_multiple_tokens "\n \n\n" [ Eol; Eol; Eol; Eof ] );
+      test_multiple_tokens "\n \n\n" [ Eol; White_space; Eol; Eol; Eof ] );
   ]
 
 let suite = List.concat [ tests_single_token; tests_multiple_tokens ]
