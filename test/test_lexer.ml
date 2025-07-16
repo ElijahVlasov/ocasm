@@ -101,6 +101,20 @@ let tests_multiple_tokens =
       test_multiple_tokens "\n \n\n"
         [ Common Eol; Common White_space; Common Eol; Common Eol; Common Eof ]
     );
+    ( "4 Names",
+      `Quick,
+      test_multiple_tokens "name1    name2\t \tna_____me3\n    \t....na..me.4"
+        [
+          Common (Name "name1");
+          Common White_space;
+          Common (Name "name2");
+          Common White_space;
+          Common (Name "na_____me3");
+          Common Eol;
+          Common White_space;
+          Common (Name "....na..me.4");
+          Common Eof;
+        ] );
   ]
 
 let suite = List.concat [ tests_single_token; tests_multiple_tokens ]

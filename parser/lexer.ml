@@ -175,47 +175,16 @@ let read_name st k =
   if Char.is_nonascii !ch then read_proper_name st
   else k (Lc_buffer.content st.token_buf) (Lc_buffer.lc_content st.token_buf)
 
-let name_like_started (type t) ~isa_specific ?consumed_nothing st ch =
+let name_like_started (type t) ~isa_specific ?default st ch =
   let module T = (val st.isa_token_m : T with type token = t) in
   Lc_buffer.clear st.token_buf;
   Lc_buffer.add_char st.token_buf ch;
   read_name st @@ fun name lc_name ->
-  if String.length lc_name <> 1 || Option.is_none consumed_nothing then
+  if String.length lc_name <> 1 || Option.is_none default then
     match isa_specific lc_name with
     | None -> Common (Token.Name name)
     | Some t -> Isa_specific t
-  else Option.value_exn consumed_nothing ()
-
-let directive_started (type t) st =
-  let module T = (val st.isa_token_m : T with type token = t) in
-  Lc_buffer.clear st.token_buf;
-  Lc_buffer.add_char st.token_buf '.';
-  read_name st @@ fun name lc_name ->
-  if String.length lc_name = 0 then Common Token.Dot
-  else
-    match T.directive lc_name with
-    | None -> Common (Token.Name name)
-    | Some t -> Isa_specific t
-
-let symbol_started (type t) st ch =
-  let module T = (val st.isa_token_m : T with type token = t) in
-  Lc_buffer.clear st.token_buf;
-  Lc_buffer.add_char st.token_buf ch;
-  read_name st @@ fun name lc_name ->
-  match T.name lc_name with
-  | None -> Common (Token.Name name)
-  | Some t -> Isa_specific t
-
-let reserved_started (type t) st =
-  let module T = (val st.isa_token_m : T with type token = t) in
-  Lc_buffer.clear st.token_buf;
-  Lc_buffer.add_char st.token_buf '%';
-  read_name st @@ fun name lc_name ->
-  if String.length lc_name = 0 then Common Token.Percent
-  else
-    match T.reserved lc_name with
-    | None -> Common (Token.Name name)
-    | Some t -> Isa_specific t
+  else Option.value_exn default
 
 let next_token (type t) st =
   let module T = (val st.isa_token_m : T with type token = t) in
@@ -229,13 +198,10 @@ let next_token (type t) st =
     | '0' .. '9' -> number_start st ch
     | 'A' .. 'Z' | 'a' .. 'z' -> name_like_started ~isa_specific:T.name st ch
     | '.' ->
-        name_like_started ~isa_specific:T.directive
-          ~consumed_nothing:(fun () -> Common Dot)
-          st ch
+        name_like_started ~isa_specific:T.directive ~default:(Common Dot) st ch
     | '%' ->
-        name_like_started ~isa_specific:T.reserved
-          ~consumed_nothing:(fun () -> Common Percent)
-          st ch
+        name_like_started ~isa_specific:T.reserved ~default:(Common Percent) st
+          ch
     | ',' -> Common Comma
     | ':' -> Common Colon
     | '(' -> Common LBracket
