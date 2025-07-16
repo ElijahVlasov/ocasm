@@ -6,18 +6,21 @@ exception WrongDigit of char
 module type D = sig
   val bit_len : int
   val get_digit : char -> int64
+  val is_digit : char -> bool
 end
 
 module type S = sig
   type t
 
+  val is_digit : char -> bool
   val create : unit -> t
-  val feed_exn : t -> char -> unit
+  val clear : t -> unit
+  val add_char : t -> char -> unit
   val build : t -> int64 array
 end
 
 module MkBuilder (D : D) = struct
-  open D
+  include D
 
   type t = {
     mutable hd : int64;
@@ -27,6 +30,12 @@ module MkBuilder (D : D) = struct
   }
 
   let create () = { hd = 0L; limbs = []; hd_bit_len = 0; limbs_len = 0 }
+
+  let clear b =
+    b.hd <- 0L;
+    b.limbs <- [];
+    b.hd_bit_len <- 0;
+    b.limbs_len <- 0
 
   let add_hd st =
     st.limbs <- List.cons st.hd st.limbs;
@@ -39,7 +48,7 @@ module MkBuilder (D : D) = struct
   let ( + ) = Int.( + )
   let ( - ) = Int.( - )
 
-  let feed_exn st ch =
+  let add_char st ch =
     let d = get_digit ch in
     if st.hd_bit_len < 64 then (
       st.hd <-
@@ -83,17 +92,21 @@ module Dec_builder : S = struct
   type t = unit
 
   let create () = failwith "Not implemented"
-  let feed_exn st ch = failwith "Not implemented"
+  let clear st = failwith "Not implemented"
+  let add_char st ch = failwith "Not implemented"
   let build st = failwith "Not implemented"
+  let is_digit = Char.is_digit
 end
 
 module Bin_builder : S = MkBuilder (struct
   let bit_len = 1
   let get_digit = function '0' -> 0L | '1' -> 1L | ch -> raise (WrongDigit ch)
+  let is_digit = Char.is_binary
 end)
 
 module Oct_builder : S = MkBuilder (struct
   let bit_len = 3
+  let is_digit = Char.is_octal
 
   let get_digit = function
     | '0' -> 0L
@@ -109,6 +122,7 @@ end)
 
 module Hex_builder : S = MkBuilder (struct
   let bit_len = 4
+  let is_digit = Char.is_hex_digit
 
   let get_digit = function
     | '0' -> 0L

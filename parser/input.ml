@@ -10,7 +10,11 @@ module type C0 = sig
   val back : t -> bool
   val back_unchecked : t -> unit
   val get : t -> char
+
+  include Equal.S with type t := t
 end
+
+type 'a cursor = (module C0 with type t = 'a)
 
 module type C = sig
   include C0
@@ -80,6 +84,7 @@ module StringInput0 = struct
     type input = t
     type t = { parent : input; mutable pos : int }
 
+    let equal x y = x.pos = y.pos
     let create parent = { parent; pos = parent.cursor }
     let get i = String.unsafe_get i.parent.content i.pos
 
@@ -195,6 +200,7 @@ module FileInput0 = struct
     type input = t
     type t = { parent : input; pos : Pointer.t }
 
+    let equal x y = !(x.pos) = !(y.pos)
     let create parent = { parent; pos = ref parent.cursor }
 
     let get i =
@@ -312,3 +318,17 @@ module MakePositioned (Input : S) = struct
   include MkS (X)
   include X
 end
+
+let consume_cursor_while_true (type a) ~pred ~buf csr_m i =
+  let module C = (val csr_m : C0 with type t = a) in
+  let ch = ref (C.next i) in
+  while Option.is_some !ch && pred (Option.value_exn !ch) do
+    Buffer.add_char buf (Option.value_exn !ch);
+    ch := C.next i
+  done
+
+let consume_between_cursors (type a) ~buf csr_m ~s ~e =
+  let module C = (val csr_m : C0 with type t = a) in
+  while not @@ C.equal s e do
+    Buffer.add_char buf (Option.value_exn (C.next s))
+  done

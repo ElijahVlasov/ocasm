@@ -7,6 +7,8 @@ module type S0 = sig
   val pos : t -> int * int
   val line : t -> int
   val col : t -> int
+
+  include Equal.S with type t := t
 end
 
 module type S0_M = sig
@@ -32,6 +34,8 @@ end
 module MakePositionedForward (T : T) = struct
   type t = { unwrap : T.t; mutable line : int; mutable col : int }
   [@@deriving fields]
+
+  let equal x y = x.line = y.line && x.col = y.col
 
   let create ?line ?col unwrap =
     let line = Option.value ~default:1 line in
@@ -61,6 +65,8 @@ module MakePositioned (T : T) = struct
     prev_line_lens : int Stack.t;
   }
   [@@deriving fields]
+
+  let equal x y = x.line = y.line && x.col = y.col
 
   let create ?line ?col unwrap =
     let line = Option.value ~default:1 line in

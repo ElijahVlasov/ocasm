@@ -3,8 +3,10 @@ exception WrongDigit of char
 module type S = sig
   type t
 
+  val is_digit : char -> bool
   val create : unit -> t
-  val feed_exn : t -> char -> unit
+  val clear : t -> unit
+  val add_char : t -> char -> unit
   val build : t -> int64 array
 end
 

@@ -1,20 +1,54 @@
 open Base
 open Ocasm_utils
 
-type 'a t = {
+module type T = sig
+  type token
+
+  val directive : string -> token option
+  val name : string -> token option
+  val reserved : string -> token option
+end
+
+module type B = sig
+  type t
+
+  val add_char : t -> char -> unit
+  val clear : t -> unit
+end
+
+module Lc_buffer : sig
+  include B
+
+  val create : int -> t
+  val content : t -> string
+  val lc_content : t -> string
+  val to_buffer : t -> Buffer.t
+end = struct
+  type t = { content : Buffer.t; lc_content : Buffer.t }
+
+  let create n = { content = Buffer.create n; lc_content = Buffer.create n }
+
+  let add_char b c =
+    Buffer.add_char b.content c;
+    Buffer.add_char b.lc_content (Char.lowercase c)
+
+  let clear b =
+    Buffer.clear b.content;
+    Buffer.clear b.lc_content
+
+  let content b = Buffer.contents b.content
+  let lc_content b = Buffer.contents b.lc_content
+  let to_buffer b = b.content
+end
+
+type ('a, 't) t = {
+  isa_token_m : (module T with type token = 't);
   inp_m : 'a Input.t;
   inp : 'a;
-  content : Buffer.t;
-  lower_case_content : Buffer.t;
+  token_buf : Lc_buffer.t;
 }
 
-let ( = ) = Char.equal
-let whitespaces = Ocasm_utils.Lut.create [ '\n'; ' '; '\t'; Input.eof ]
-let comment = Ocasm_utils.Lut.create [ '/'; '#' ]
-
-let special_symbols =
-  Ocasm_utils.Lut.create
-    [ ':'; '\\'; '"'; '\''; '!'; ';'; '('; ')'; '['; ']'; '{'; '}'; Input.eof ]
+type 't token = Common of Token.t | Isa_specific of 't [@@deriving eq]
 
 let next (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a) in
@@ -29,6 +63,7 @@ let skip (type a) st =
   I.skip st.inp
 
 let rec multiline_comment st k =
+  let open Char in
   let ch = next st in
   if ch = '*' then
     if peek st = '/' then (
@@ -39,51 +74,49 @@ let rec multiline_comment st k =
   else multiline_comment st k
 
 let multiline_comment_start st k =
+  let open Char in
   let next_ch = next st in
   if next_ch = '*' then multiline_comment st k
   else failwith "Expected multiline comment"
 
-let rec consume_while_true st pred =
-  let ch = peek st in
-  if pred ch then (
-    Buffer.add_char st.content ch;
+let consume_while_true (type a) bldr_m bldr st pred =
+  let module B = (val bldr_m : B with type t = a) in
+  let ch = ref (peek st) in
+  while pred !ch do
     skip st;
-    consume_while_true st pred)
-  else Buffer.contents st.content
+    B.add_char bldr !ch;
+    ch := peek st
+  done
 
-let consume_number (type a) st bldr_m is_digit =
+let consume_number (type a) st bldr_m =
   let module B = (val bldr_m : Number_builder.S with type t = a) in
   let bldr = B.create () in
-  let ch = ref (peek st) in
-  while is_digit !ch do
-    B.feed_exn bldr !ch;
-    skip st;
-    ch := peek st
-  done;
-  if Char.is_whitespace !ch || Char.is_special_symbol !ch || Char.is_eof !ch
-  then B.build bldr
+  consume_while_true (module B) bldr st B.is_digit;
+  let ch = peek st in
+  if Char.is_word_separator ch then B.build bldr
   else failwith "Unexpected symbol"
 
 let bin_number st =
   let open Number_builder in
-  consume_number st (module Bin_builder) Char.is_binary
+  consume_number st (module Bin_builder)
 
 let oct_number st =
   let open Number_builder in
-  consume_number st (module Oct_builder) Char.is_octal
+  consume_number st (module Oct_builder)
 
 let dec_number st =
   let open Number_builder in
-  consume_number st (module Dec_builder) Char.is_digit
+  consume_number st (module Dec_builder)
 
 let hex_number st =
   let open Number_builder in
-  consume_number st (module Hex_builder) Char.is_hex_digit
+  consume_number st (module Hex_builder)
 
 let number_start st ch =
+  let open Char in
   let open Token in
-  Buffer.clear st.content;
-  Buffer.add_char st.content ch;
+  let token_buf = Lc_buffer.to_buffer st.token_buf in
+  Buffer.add_char token_buf ch;
   if ch = '0' then
     let ch = peek st in
     if Char.is_digit ch then (
@@ -91,23 +124,24 @@ let number_start st ch =
       | '8' | '9' -> failwith "Incorrect octal constant"
       | _ ->
           skip st;
-          Buffer.add_char st.content ch;
-          Oct (oct_number st))
+          Buffer.add_char token_buf ch;
+          Common (Oct (oct_number st)))
     else if Char.lowercase ch = 'x' then (
       skip st;
-      Buffer.add_char st.content ch;
-      Hex (hex_number st))
+      Buffer.add_char token_buf ch;
+      Common (Hex (hex_number st)))
     else if Char.lowercase ch = 'b' then (
       skip st;
-      Buffer.add_char st.content ch;
-      Bin (bin_number st))
-    else Dec (Array.create ~len:1 0L)
-  else Dec (dec_number st)
+      Buffer.add_char token_buf ch;
+      Common (Bin (bin_number st)))
+    else Common (Dec (Array.create ~len:1 0L))
+  else Common (Dec (dec_number st))
 
 let skip_comments_and_whitespaces st =
+  let open Char in
   let rec skip_comments_and_whitespaces ~has_advanced st ch =
     match ch with
-    | '\t' | ' ' ->
+    | '\t' | ' ' | '\r' ->
         skip st;
         skip_comments_and_whitespaces st (peek st) ~has_advanced:true
     | '#' ->
@@ -125,75 +159,107 @@ let skip_comments_and_whitespaces st =
   in
   skip_comments_and_whitespaces ~has_advanced:false st (peek st)
 
-let rec read_name st ch =
-  let module Lut = Ocasm_utils.Lut in
-  let finalize =
-    (Buffer.contents st.content, Buffer.contents st.lower_case_content)
-  in
-  match ch with
-  | ' ' | '\t' | '\n' -> finalize
-  | '/' | '#' -> finalize
-  | ch when ch = Input.eof -> finalize
-  | ch when Lut.mem special_symbols ch -> finalize
-  | _ ->
-      Buffer.add_char st.content ch;
-      Buffer.add_char st.lower_case_content (Char.lowercase ch);
-      let ch = next st in
-      read_name st ch
+let read_proper_name st =
+  let token_buf = Lc_buffer.to_buffer st.token_buf in
+  consume_while_true
+    (module Buffer)
+    token_buf st
+    (fun ch -> Char.is_valid_name_symbol ch || Char.is_nonascii ch);
+  Common (Token.Name (Buffer.contents token_buf))
 
-let directive_started st =
-  skip st;
-  Buffer.clear st.content;
-  Buffer.clear st.lower_case_content;
-  read_name st
+let read_name st k =
+  let ch = ref (peek st) in
+  consume_while_true
+    (module Lc_buffer)
+    st.token_buf st Char.is_valid_name_symbol;
+  if Char.is_nonascii !ch then read_proper_name st
+  else k (Lc_buffer.content st.token_buf) (Lc_buffer.lc_content st.token_buf)
 
-let symbol_started st ch =
-  Buffer.clear st.content;
-  Buffer.clear st.lower_case_content;
-  read_name st ch
+let name_like_started (type t) ~isa_specific ?consumed_nothing st ch =
+  let module T = (val st.isa_token_m : T with type token = t) in
+  Lc_buffer.clear st.token_buf;
+  Lc_buffer.add_char st.token_buf ch;
+  read_name st @@ fun name lc_name ->
+  if String.length lc_name <> 1 || Option.is_none consumed_nothing then
+    match isa_specific lc_name with
+    | None -> Common (Token.Name name)
+    | Some t -> Isa_specific t
+  else Option.value_exn consumed_nothing ()
 
-let next_token st =
-  let module Lut = Ocasm_utils.Lut in
+let directive_started (type t) st =
+  let module T = (val st.isa_token_m : T with type token = t) in
+  Lc_buffer.clear st.token_buf;
+  Lc_buffer.add_char st.token_buf '.';
+  read_name st @@ fun name lc_name ->
+  if String.length lc_name = 0 then Common Token.Dot
+  else
+    match T.directive lc_name with
+    | None -> Common (Token.Name name)
+    | Some t -> Isa_specific t
+
+let symbol_started (type t) st ch =
+  let module T = (val st.isa_token_m : T with type token = t) in
+  Lc_buffer.clear st.token_buf;
+  Lc_buffer.add_char st.token_buf ch;
+  read_name st @@ fun name lc_name ->
+  match T.name lc_name with
+  | None -> Common (Token.Name name)
+  | Some t -> Isa_specific t
+
+let reserved_started (type t) st =
+  let module T = (val st.isa_token_m : T with type token = t) in
+  Lc_buffer.clear st.token_buf;
+  Lc_buffer.add_char st.token_buf '%';
+  read_name st @@ fun name lc_name ->
+  if String.length lc_name = 0 then Common Token.Percent
+  else
+    match T.reserved lc_name with
+    | None -> Common (Token.Name name)
+    | Some t -> Isa_specific t
+
+let next_token (type t) st =
+  let module T = (val st.isa_token_m : T with type token = t) in
   let open Token in
   let has_advanced = skip_comments_and_whitespaces st in
-  if has_advanced then White_space
+  if has_advanced then Common White_space
   else
     let ch = next st in
     match ch with
-    | '\n' -> Eol
+    | '\n' -> Common Eol
     | '0' .. '9' -> number_start st ch
-    | 'A' .. 'Z' | 'a' .. 'z' -> Symbol_or_opcode (symbol_started st ch)
-    | '.' -> Symbol_or_directive (directive_started st ch)
-    | ',' -> Comma
-    | ':' -> Colon
-    | '(' -> LBracket
-    | ')' -> RBracket
-    | '[' -> LSquare
-    | ']' -> RSquare
-    | '{' -> LCurly
-    | '}' -> RCurly
-    | '!' -> ExclamaitionMark
-    | '%' -> Percent
-    | ch when ch = Input.eof -> Eof
+    | 'A' .. 'Z' | 'a' .. 'z' -> name_like_started ~isa_specific:T.name st ch
+    | '.' ->
+        name_like_started ~isa_specific:T.directive
+          ~consumed_nothing:(fun () -> Common Dot)
+          st ch
+    | '%' ->
+        name_like_started ~isa_specific:T.reserved
+          ~consumed_nothing:(fun () -> Common Percent)
+          st ch
+    | ',' -> Common Comma
+    | ':' -> Common Colon
+    | '(' -> Common LBracket
+    | ')' -> Common RBracket
+    | '[' -> Common LSquare
+    | ']' -> Common RSquare
+    | '{' -> Common LCurly
+    | '}' -> Common RCurly
+    | '!' -> Common ExclamaitionMark
+    | '\x00' -> Common Eof
+    | ch when Char.is_nonascii ch -> failwith "Unimplemented"
     | _ -> failwith "Unknown symbol"
 
-let create inp_m inp =
-  {
-    inp_m;
-    inp;
-    content = Buffer.create 1024;
-    lower_case_content = Buffer.create 1024;
-  }
+let create isa_token_m inp_m inp =
+  { isa_token_m; inp_m; inp; token_buf = Lc_buffer.create 1024 }
 
 let to_seq lexer =
   let open Base.Sequence.Generator in
   let open Token in
   let rec consume_tokens () =
     match next_token lexer with
-    | Eof -> yield Eof
+    | Common Eof -> yield @@ Common Eof
     | token -> yield token >>= consume_tokens
   in
   run @@ consume_tokens ()
 
-let to_list : type a. a t -> Token.t list =
- fun lexer -> Sequence.to_list (to_seq lexer)
+let to_list lexer = Sequence.to_list (to_seq lexer)

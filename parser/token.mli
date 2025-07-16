@@ -29,6 +29,7 @@ type t =
   | LBracket
   | LCurly
   | LSquare
+  | Name of string
   | Opcode of string
   | Operand of string
   | Percent

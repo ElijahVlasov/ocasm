@@ -6,6 +6,8 @@ module type S0 = sig
   val pos : t -> int * int
   val line : t -> int
   val col : t -> int
+
+  include Equal.S with type t := t
 end
 
 module type S0_M = sig

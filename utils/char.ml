@@ -12,3 +12,12 @@ let is_special_symbol = function
   | _ -> false
 
 let is_eof = function '\x00' -> true | _ -> false
+let is_nonascii ch = '\x80' <= ch
+
+let is_valid_name_symbol = function
+  | 'A' .. 'Z' | 'a' .. 'z' | '.' | '_' | '0' .. '9' -> true
+  | _ -> false
+
+let is_word_separator ch =
+  if ch = '.' then false
+  else is_special_symbol ch || is_eof ch || is_whitespace ch

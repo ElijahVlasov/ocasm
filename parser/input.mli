@@ -9,7 +9,11 @@ module type C0 = sig
   val back : t -> bool
   val back_unchecked : t -> unit
   val get : t -> char
+
+  include Equal.S with type t := t
 end
+
+type 'a cursor = (module C0 with type t = 'a)
 
 module type C = sig
   include C0
@@ -73,3 +77,8 @@ module MakePositioned (Input : S) : sig
 
   val create : Input.t -> t
 end
+
+val consume_cursor_while_true :
+  pred:(char -> bool) -> buf:Buffer.t -> 'a cursor -> 'a -> unit
+
+val consume_between_cursors : buf:Buffer.t -> 'a cursor -> s:'a -> e:'a -> unit

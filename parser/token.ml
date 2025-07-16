@@ -29,6 +29,7 @@ type t =
   | LBracket
   | LCurly
   | LSquare
+  | Name of string
   | Opcode of string
   | Operand of string
   | Percent
@@ -75,6 +76,7 @@ let to_string = function
   | LBracket -> "("
   | LCurly -> "{"
   | LSquare -> "["
+  | Name name -> name
   | Opcode x -> x
   | Operand x -> x
   | Percent -> "%"
