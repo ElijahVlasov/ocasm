@@ -47,25 +47,6 @@ type 'a t =
   | Isa_specific of 'a
 [@@deriving eq]
 
-let string_to_string_literal s =
-  let buf = Buffer.create (2 * String.length s) in
-  String.iter s ~f:(fun ch ->
-      match ch with
-      | '\x00' -> Printf.bprintf buf "\\0"
-      | '\x01' .. '\x06' | '\x14' .. '\x19' | '\x7F' ->
-          Printf.bprintf buf "%X" (Char.to_int ch)
-      | '\x07' -> Printf.bprintf buf "\\a"
-      | '\x08' -> Printf.bprintf buf "\\b"
-      | '\t' -> Printf.bprintf buf "\\t"
-      | '\n' -> Printf.bprintf buf "\\n"
-      | '\x11' -> Printf.bprintf buf "\\v"
-      | '\x12' -> Printf.bprintf buf "\\f"
-      | '\r' -> Printf.bprintf buf "\\r"
-      | '\\' -> Printf.bprintf buf "\\\\"
-      | '"' -> Printf.bprintf buf "\\\""
-      | ch -> Printf.bprintf buf "%c" ch);
-  Buffer.contents buf
-
 module MkToken (Isa_specific : sig
   type t
 
@@ -110,8 +91,7 @@ end = struct
     | Name name -> name
     | Opcode x -> x
     | Operand x -> x
-    | String_literal x ->
-        Base.Printf.sprintf "%a" (fun () -> string_to_string_literal) x
+    | String_literal x -> Printf.sprintf "%S" x
     | Percent -> "%"
     | RBracket -> ")"
     | RCurly -> "}"
