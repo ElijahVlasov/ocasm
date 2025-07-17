@@ -10,9 +10,7 @@ module type T = sig
   val reserved : string -> token option
 end
 
-type 't token = Common of Token.t | Isa_specific of 't [@@deriving eq]
-
 val create : (module T with type token = 't) -> 'a Input.t -> 'a -> ('a, 't) t
-val next_token : ('a, 't) t -> 't token
-val to_seq : ('a, 't) t -> 't token Sequence.t
-val to_list : ('a, 't) t -> 't token list
+val next_token : ('a, 't) t -> 't Token.t
+val to_seq : ('a, 't) t -> 't Token.t Sequence.t
+val to_list : ('a, 't) t -> 't Token.t list

@@ -1,4 +1,7 @@
-type t =
+open Base
+open Ocasm_utils
+
+type 'a t =
   | Colon
   | Semicolon
   | Comma
@@ -40,53 +43,67 @@ type t =
   | Symbol_or_directive of (string * string)
   | Symbol_or_opcode of (string * string)
   | White_space
+  | Isa_specific of 'a
 [@@deriving eq]
 
-let is_eof = function Eof -> true | _ -> false
+module MkToken (Isa_specific : sig
+  type t
 
-let to_string = function
-  | Colon -> ":"
-  | Semicolon -> ";"
-  | Comma -> ","
-  | Bin x | Oct x | Dec x | Hex x ->
-      if Array.length x = 1 then Int64.to_string (Array.get x 0)
-      else (
-        Array.iter (fun i -> Stdlib.print_endline (Int64.to_string i)) x;
-        "")
-  | Eof -> "\\x00"
-  | Eol -> "\\n"
-  | ExclamaitionMark -> "!"
-  | Hash -> "#"
-  | Dollar -> "$"
-  | Amp -> "&"
-  | Mul -> "*"
-  | Plus -> "+"
-  | Eq -> "="
-  | Lt -> "<"
-  | Gt -> ">"
-  | QuestionMark -> "?"
-  | At -> "@"
-  | Dot -> "."
-  | Slash -> "/"
-  | Bslash -> "\\"
-  | Caret -> "^"
-  | Btick -> "`"
-  | Vbar -> "|"
-  | Tilde -> "~"
-  | LBracket -> "("
-  | LCurly -> "{"
-  | LSquare -> "["
-  | Name name -> name
-  | Opcode x -> x
-  | Operand x -> x
-  | Percent -> "%"
-  | RBracket -> ")"
-  | RCurly -> "}"
-  | RSquare -> "]"
-  | Symbol x -> x
-  | Symbol_or_directive (x, _) -> x
-  | Symbol_or_opcode (x, _) -> x
-  | White_space -> " "
+  include To_string.S with type t := t
+  include Equal.S with type t := t
+end) : sig
+  type t := Isa_specific.t t
+
+  include To_string.S with type t := t
+  include Equal.S with type t := t
+end = struct
+  let to_string = function
+    | Colon -> ":"
+    | Semicolon -> ";"
+    | Comma -> ","
+    | Bin x | Oct x | Dec x | Hex x ->
+        (* TODO : implement this *)
+        if Array.length x = 1 then Int64.to_string (Array.get x 0) else ""
+    | Eof -> "\\x00"
+    | Eol -> "\\n"
+    | ExclamaitionMark -> "!"
+    | Hash -> "#"
+    | Dollar -> "$"
+    | Amp -> "&"
+    | Mul -> "*"
+    | Plus -> "+"
+    | Eq -> "="
+    | Lt -> "<"
+    | Gt -> ">"
+    | QuestionMark -> "?"
+    | At -> "@"
+    | Dot -> "."
+    | Slash -> "/"
+    | Bslash -> "\\"
+    | Caret -> "^"
+    | Btick -> "`"
+    | Vbar -> "|"
+    | Tilde -> "~"
+    | LBracket -> "("
+    | LCurly -> "{"
+    | LSquare -> "["
+    | Name name -> name
+    | Opcode x -> x
+    | Operand x -> x
+    | Percent -> "%"
+    | RBracket -> ")"
+    | RCurly -> "}"
+    | RSquare -> "]"
+    | Symbol x -> x
+    | Symbol_or_directive (x, _) -> x
+    | Symbol_or_opcode (x, _) -> x
+    | White_space -> " "
+    | Isa_specific t -> Isa_specific.to_string t
+
+  let equal x y = equal Isa_specific.equal x y
+end
+
+let is_eof = function Eof -> true | _ -> false
 
 let of_special_symbol = function
   | '.' -> Some Dot

@@ -1,4 +1,7 @@
-type t =
+open Base
+open Ocasm_utils
+
+type 'a t =
   | Colon
   | Semicolon
   | Comma
@@ -40,8 +43,20 @@ type t =
   | Symbol_or_directive of (string * string)
   | Symbol_or_opcode of (string * string)
   | White_space
+  | Isa_specific of 'a
 [@@deriving eq]
 
-val is_eof : t -> bool
-val to_string : t -> string
-val of_special_symbol : char -> t option
+module MkToken (Isa_specific : sig
+  type t
+
+  include To_string.S with type t := t
+  include Equal.S with type t := t
+end) : sig
+  type t := Isa_specific.t t
+
+  include To_string.S with type t := t
+  include Equal.S with type t := t
+end
+
+val is_eof : 'a t -> bool
+val of_special_symbol : char -> 'a t option

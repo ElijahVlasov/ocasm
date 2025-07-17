@@ -48,8 +48,6 @@ type ('a, 't) t = {
   token_buf : Lc_buffer.t;
 }
 
-type 't token = Common of Token.t | Isa_specific of 't [@@deriving eq]
-
 let next (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a) in
   I.next st.inp
@@ -88,6 +86,17 @@ let consume_while_true (type a) bldr_m bldr st pred =
     ch := peek st
   done
 
+let consume_until_nl st =
+  consume_while_true
+    (module struct
+      type t = unit
+
+      let add_char _ _ = ()
+      let clear _ = ()
+    end)
+    () st
+    (fun ch -> not @@ Char.is_newline ch)
+
 let consume_number (type a) st bldr_m =
   let module B = (val bldr_m : Number_builder.S with type t = a) in
   let bldr = B.create () in
@@ -125,20 +134,19 @@ let number_start st ch =
       | _ ->
           skip st;
           Buffer.add_char token_buf ch;
-          Common (Oct (oct_number st)))
+          Oct (oct_number st))
     else if Char.lowercase ch = 'x' then (
       skip st;
       Buffer.add_char token_buf ch;
-      Common (Hex (hex_number st)))
+      Hex (hex_number st))
     else if Char.lowercase ch = 'b' then (
       skip st;
       Buffer.add_char token_buf ch;
-      Common (Bin (bin_number st)))
-    else Common (Dec (Array.create ~len:1 0L))
-  else Common (Dec (dec_number st))
+      Bin (bin_number st))
+    else Dec (Array.create ~len:1 0L)
+  else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =
-  let open Char in
   let rec skip_comments_and_whitespaces ~has_advanced st ch =
     match ch with
     | '\t' | ' ' | '\r' ->
@@ -146,11 +154,8 @@ let skip_comments_and_whitespaces st =
         skip_comments_and_whitespaces st (peek st) ~has_advanced:true
     | '#' ->
         skip st;
-        let rec ignore_until_nl st =
-          let ch = peek st in
-          if ch = '\n' then true else ignore_until_nl st
-        in
-        ignore_until_nl st
+        consume_until_nl st;
+        true
     | '/' ->
         skip st;
         multiline_comment_start st
@@ -159,20 +164,20 @@ let skip_comments_and_whitespaces st =
   in
   skip_comments_and_whitespaces ~has_advanced:false st (peek st)
 
-let read_proper_name st =
-  let token_buf = Lc_buffer.to_buffer st.token_buf in
+let read_proper_name st token_buf =
   consume_while_true
     (module Buffer)
     token_buf st
     (fun ch -> Char.is_valid_name_symbol ch || Char.is_nonascii ch);
-  Common (Token.Name (Buffer.contents token_buf))
+  Token.Name (Buffer.contents token_buf)
 
 let read_name st k =
-  let ch = ref (peek st) in
   consume_while_true
     (module Lc_buffer)
     st.token_buf st Char.is_valid_name_symbol;
-  if Char.is_nonascii !ch then read_proper_name st
+  let ch = ref (peek st) in
+  if Char.is_nonascii !ch then
+    read_proper_name st (Lc_buffer.to_buffer st.token_buf)
   else k (Lc_buffer.content st.token_buf) (Lc_buffer.lc_content st.token_buf)
 
 let name_like_started (type t) ~isa_specific ?default st ch =
@@ -182,37 +187,38 @@ let name_like_started (type t) ~isa_specific ?default st ch =
   read_name st @@ fun name lc_name ->
   if String.length lc_name <> 1 || Option.is_none default then
     match isa_specific lc_name with
-    | None -> Common (Token.Name name)
-    | Some t -> Isa_specific t
+    | None -> Token.Name name
+    | Some t -> Token.Isa_specific t
   else Option.value_exn default
 
 let next_token (type t) st =
   let module T = (val st.isa_token_m : T with type token = t) in
   let open Token in
   let has_advanced = skip_comments_and_whitespaces st in
-  if has_advanced then Common White_space
+  if has_advanced then White_space
   else
     let ch = next st in
     match ch with
-    | '\n' -> Common Eol
+    | '\n' -> Eol
     | '0' .. '9' -> number_start st ch
     | 'A' .. 'Z' | 'a' .. 'z' -> name_like_started ~isa_specific:T.name st ch
-    | '.' ->
-        name_like_started ~isa_specific:T.directive ~default:(Common Dot) st ch
-    | '%' ->
-        name_like_started ~isa_specific:T.reserved ~default:(Common Percent) st
-          ch
-    | ',' -> Common Comma
-    | ':' -> Common Colon
-    | '(' -> Common LBracket
-    | ')' -> Common RBracket
-    | '[' -> Common LSquare
-    | ']' -> Common RSquare
-    | '{' -> Common LCurly
-    | '}' -> Common RCurly
-    | '!' -> Common ExclamaitionMark
-    | '\x00' -> Common Eof
-    | ch when Char.is_nonascii ch -> failwith "Unimplemented"
+    | '.' -> name_like_started ~isa_specific:T.directive ~default:Dot st ch
+    | '%' -> name_like_started ~isa_specific:T.reserved ~default:Percent st ch
+    | ',' -> Comma
+    | ':' -> Colon
+    | '(' -> LBracket
+    | ')' -> RBracket
+    | '[' -> LSquare
+    | ']' -> RSquare
+    | '{' -> LCurly
+    | '}' -> RCurly
+    | '!' -> ExclamaitionMark
+    | '\x00' -> Eof
+    | ch when Char.is_nonascii ch ->
+        let token_buf = Lc_buffer.to_buffer st.token_buf in
+        Buffer.clear token_buf;
+        Buffer.add_char token_buf ch;
+        read_proper_name st token_buf
     | _ -> failwith "Unknown symbol"
 
 let create isa_token_m inp_m inp =
@@ -223,7 +229,7 @@ let to_seq lexer =
   let open Token in
   let rec consume_tokens () =
     match next_token lexer with
-    | Common Eof -> yield @@ Common Eof
+    | Eof -> yield @@ Eof
     | token -> yield token >>= consume_tokens
   in
   run @@ consume_tokens ()
