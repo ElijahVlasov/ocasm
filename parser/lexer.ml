@@ -48,17 +48,41 @@ type ('a, 't) t = {
   token_buf : Lc_buffer.t;
 }
 
-let next (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
-  I.next st.inp
+module Utils = struct
+  let next (type a) st =
+    let module I = (val st.inp_m : Input.S with type t = a) in
+    I.next st.inp
 
-let peek (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
-  I.peek st.inp
+  let peek (type a) st =
+    let module I = (val st.inp_m : Input.S with type t = a) in
+    I.peek st.inp
 
-let skip (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
-  I.skip st.inp
+  let skip (type a) st =
+    let module I = (val st.inp_m : Input.S with type t = a) in
+    I.skip st.inp
+
+  let consume_while_true (type a) bldr_m bldr st pred =
+    let module B = (val bldr_m : B with type t = a) in
+    let ch = ref (peek st) in
+    while pred !ch do
+      skip st;
+      B.add_char bldr !ch;
+      ch := peek st
+    done
+
+  let consume_until_nl st =
+    consume_while_true
+      (module struct
+        type t = unit
+
+        let add_char _ _ = ()
+        let clear _ = ()
+      end)
+      () st
+      (fun ch -> not @@ Char.is_newline ch)
+end
+
+open Utils
 
 let rec multiline_comment st k =
   let open Char in
@@ -68,7 +92,7 @@ let rec multiline_comment st k =
       skip st;
       k st (next st))
     else multiline_comment st k
-  else if ch = Input.eof then failwith "Unfinished comment"
+  else if Char.is_eof ch then failwith "Unfinished comment"
   else multiline_comment st k
 
 let multiline_comment_start st k =
@@ -76,26 +100,6 @@ let multiline_comment_start st k =
   let next_ch = next st in
   if next_ch = '*' then multiline_comment st k
   else failwith "Expected multiline comment"
-
-let consume_while_true (type a) bldr_m bldr st pred =
-  let module B = (val bldr_m : B with type t = a) in
-  let ch = ref (peek st) in
-  while pred !ch do
-    skip st;
-    B.add_char bldr !ch;
-    ch := peek st
-  done
-
-let consume_until_nl st =
-  consume_while_true
-    (module struct
-      type t = unit
-
-      let add_char _ _ = ()
-      let clear _ = ()
-    end)
-    () st
-    (fun ch -> not @@ Char.is_newline ch)
 
 let consume_number (type a) st bldr_m =
   let module B = (val bldr_m : Number_builder.S with type t = a) in
