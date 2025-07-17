@@ -128,22 +128,18 @@ let number_start st ch =
   Buffer.add_char token_buf ch;
   if ch = '0' then
     let ch = peek st in
-    if Char.is_digit ch then (
-      match ch with
-      | '8' | '9' -> failwith "Incorrect octal constant"
-      | _ ->
-          skip st;
-          Buffer.add_char token_buf ch;
-          Oct (oct_number st))
-    else if Char.lowercase ch = 'x' then (
-      skip st;
-      Buffer.add_char token_buf ch;
-      Hex (hex_number st))
-    else if Char.lowercase ch = 'b' then (
-      skip st;
-      Buffer.add_char token_buf ch;
-      Bin (bin_number st))
-    else Dec (Array.create ~len:1 0L)
+    match Char.lowercase ch with
+    | 'x' ->
+        skip st;
+        Hex (hex_number st)
+    | 'b' ->
+        skip st;
+        Bin (bin_number st)
+    | ch when Char.is_octal ch ->
+        skip st;
+        Oct (oct_number st)
+    | ch when Char.is_word_separator ch -> Dec (Array.create ~len:1 0L)
+    | _ -> failwith "Unexpected char"
   else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =

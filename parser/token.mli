@@ -35,6 +35,7 @@ type 'a t =
   | Name of string
   | Opcode of string
   | Operand of string
+  | String_literal of string
   | Percent
   | RBracket
   | RCurly
