@@ -1,6 +1,7 @@
 open Ocasm_parser
+open Lexer
 
-module MockToken = Token.MkToken (struct
+module Mock_token = Token.MkToken (struct
   type t = unit
 
   let to_string _ = ""
@@ -8,17 +9,17 @@ module MockToken = Token.MkToken (struct
 end)
 
 let token_fmt fmt token =
-  Stdlib.Format.fprintf fmt "'%s'" (MockToken.to_string token)
+  Stdlib.Format.fprintf fmt "'%s'" (Mock_token.to_string token)
 
-module MockT : Lexer.T with type token = unit = struct
-  type token = unit
+module MockT : Isa_token.S with type t = unit = struct
+  type t = unit
 
   let directive _ = None
   let name _ = None
   let reserved _ = None
 end
 
-let token = Alcotest.testable token_fmt MockToken.equal
+let token = Alcotest.testable token_fmt Mock_token.equal
 
 let test_single_token content expected () =
   let module I = Ocasm_parser.Input.StringInput in

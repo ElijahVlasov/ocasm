@@ -1,54 +1,70 @@
 open Base
 open Ocasm_utils
 
-module type T = sig
-  type token
+module Isa_token = struct
+  module type S = sig
+    type t
 
-  val directive : string -> token option
-  val name : string -> token option
-  val reserved : string -> token option
+    val directive : string -> t option
+    val name : string -> t option
+    val reserved : string -> t option
+  end
 end
 
-module type B = sig
-  type t
+module Buffer_like = struct
+  module type S = sig
+    type t
 
-  val add_char : t -> char -> unit
-  val clear : t -> unit
+    val add_char : t -> char -> unit
+    val clear : t -> unit
+  end
+
+  module Phony : S with type t = unit = struct
+    type t = unit
+
+    let add_char _ _ = ()
+    let clear _ = ()
+  end
+
+  module Lc_buffer : sig
+    include S
+
+    val create : int -> t
+    val content : t -> string
+    val lc_content : t -> string
+    val to_buffer : t -> Buffer.t
+  end = struct
+    type t = { content : Buffer.t; lc_content : Buffer.t }
+
+    let create n = { content = Buffer.create n; lc_content = Buffer.create n }
+
+    let add_char b c =
+      Buffer.add_char b.content c;
+      Buffer.add_char b.lc_content (Char.lowercase c)
+
+    let clear b =
+      Buffer.clear b.content;
+      Buffer.clear b.lc_content
+
+    let content b = Buffer.contents b.content
+    let lc_content b = Buffer.contents b.lc_content
+    let to_buffer b = b.content
+  end
 end
 
-module Lc_buffer : sig
-  include B
+open Buffer_like
 
-  val create : int -> t
-  val content : t -> string
-  val lc_content : t -> string
-  val to_buffer : t -> Buffer.t
-end = struct
-  type t = { content : Buffer.t; lc_content : Buffer.t }
+module State = struct
+  type ('a, 't) t = {
+    isa_token_m : (module Isa_token.S with type t = 't);
+    inp_m : 'a Input.t;
+    inp : 'a;
+    token_buf : Lc_buffer.t;
+  }
+  [@@deriving fields]
 
-  let create n = { content = Buffer.create n; lc_content = Buffer.create n }
+  let single_buf st = Lc_buffer.to_buffer @@ token_buf st
 
-  let add_char b c =
-    Buffer.add_char b.content c;
-    Buffer.add_char b.lc_content (Char.lowercase c)
-
-  let clear b =
-    Buffer.clear b.content;
-    Buffer.clear b.lc_content
-
-  let content b = Buffer.contents b.content
-  let lc_content b = Buffer.contents b.lc_content
-  let to_buffer b = b.content
-end
-
-type ('a, 't) t = {
-  isa_token_m : (module T with type token = 't);
-  inp_m : 'a Input.t;
-  inp : 'a;
-  token_buf : Lc_buffer.t;
-}
-
-module Utils = struct
   let next (type a) st =
     let module I = (val st.inp_m : Input.S with type t = a) in
     I.next st.inp
@@ -60,9 +76,15 @@ module Utils = struct
   let skip (type a) st =
     let module I = (val st.inp_m : Input.S with type t = a) in
     I.skip st.inp
+end
 
+type ('a, 't) t = ('a, 't) State.t
+
+open State
+
+module Utils = struct
   let consume_while_true (type a) bldr_m bldr st pred =
-    let module B = (val bldr_m : B with type t = a) in
+    let module B = (val bldr_m : Buffer_like.S with type t = a) in
     let ch = ref (peek st) in
     while pred !ch do
       skip st;
@@ -72,12 +94,7 @@ module Utils = struct
 
   let consume_until_nl st =
     consume_while_true
-      (module struct
-        type t = unit
-
-        let add_char _ _ = ()
-        let clear _ = ()
-      end)
+      (module Phony)
       () st
       (fun ch -> not @@ Char.is_newline ch)
 end
@@ -176,12 +193,12 @@ let read_name st k =
     (module Lc_buffer)
     st.token_buf st Char.is_valid_name_symbol;
   let ch = ref (peek st) in
-  if Char.is_nonascii !ch then
-    read_proper_name st (Lc_buffer.to_buffer st.token_buf)
-  else k (Lc_buffer.content st.token_buf) (Lc_buffer.lc_content st.token_buf)
+  if Char.is_nonascii !ch then read_proper_name st (State.single_buf st)
+  else (* TODO: what if we return thunks here instead of strings *)
+    k (Lc_buffer.content st.token_buf) (Lc_buffer.lc_content st.token_buf)
 
 let name_like_started (type t) ~isa_specific ?default st ch =
-  let module T = (val st.isa_token_m : T with type token = t) in
+  let module T = (val st.isa_token_m : Isa_token.S with type t = t) in
   Lc_buffer.clear st.token_buf;
   Lc_buffer.add_char st.token_buf ch;
   read_name st @@ fun name lc_name ->
@@ -192,7 +209,7 @@ let name_like_started (type t) ~isa_specific ?default st ch =
   else Option.value_exn default
 
 let next_token (type t) st =
-  let module T = (val st.isa_token_m : T with type token = t) in
+  let module T = (val st.isa_token_m : Isa_token.S with type t = t) in
   let open Token in
   let has_advanced = skip_comments_and_whitespaces st in
   if has_advanced then White_space
@@ -215,7 +232,7 @@ let next_token (type t) st =
     | '!' -> ExclamaitionMark
     | '\x00' -> Eof
     | ch when Char.is_nonascii ch ->
-        let token_buf = Lc_buffer.to_buffer st.token_buf in
+        let token_buf = State.single_buf st in
         Buffer.clear token_buf;
         Buffer.add_char token_buf ch;
         read_proper_name st token_buf

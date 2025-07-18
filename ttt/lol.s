@@ -1,8 +1,8 @@
 .ascii "lol", "TOO" /*
 */
 ddS:
-    .word 32
+    .word \ 32 
 ADDi: 
     lw a0, x6 
-    jal dds
+    jal dds \
 ret
