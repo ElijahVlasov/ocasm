@@ -1,5 +1,6 @@
 open Base
 open Ocasm_utils
+open Token
 
 module Isa_token = struct
   module type S = sig
@@ -144,7 +145,6 @@ let hex_number st =
 
 let number_start st ch =
   let open Char in
-  let open Token in
   let token_buf = Lc_buffer.to_buffer st.token_buf in
   Buffer.add_char token_buf ch;
   if ch = '0' then
@@ -186,7 +186,7 @@ let read_proper_name st token_buf =
     (module Buffer)
     token_buf st
     (fun ch -> Char.is_valid_name_symbol ch || Char.is_nonascii ch);
-  Token.Name (Buffer.contents token_buf)
+  Name (Buffer.contents token_buf)
 
 let read_name st k =
   consume_while_true
@@ -204,13 +204,49 @@ let name_like_started (type t) ~isa_specific ?default st ch =
   read_name st @@ fun name lc_name ->
   if String.length lc_name <> 1 || Option.is_none default then
     match isa_specific lc_name with
-    | None -> Token.Name name
-    | Some t -> Token.Isa_specific t
+    | None -> Name name
+    | Some t -> Isa_specific t
   else Option.value_exn default
+
+let read_escaped st buf =
+  let read_hex_escaped st buf =
+    let fst = next st in
+    let snd = next st in
+    Option.value_exn ~message:"Incorrect hex literal"
+    @@ Char.of_hex_digits_le fst snd
+  in
+  Buffer.add_char buf
+  @@
+  match next st with
+  | 'a' -> '\x07'
+  | 'b' -> '\x08'
+  | 't' -> '\t'
+  | 'n' -> '\n'
+  | 'v' -> '\x0B'
+  | 'f' -> '\x0C'
+  | 'r' -> '\r'
+  | 'x' -> read_hex_escaped st buf
+  | '"' -> '"'
+  | _ -> failwith "Unknown escape sequence"
+
+let rec read_string_literal st buf =
+  match next st with
+  | '"' -> String_literal (Buffer.contents buf)
+  | '\\' ->
+      read_escaped st buf;
+      read_string_literal st buf
+  | '\n' -> failwith "Newline in a string literal"
+  | ch ->
+      Buffer.add_char buf ch;
+      read_string_literal st buf
+
+let string_literal_started st =
+  let token_buf = State.single_buf st in
+  Buffer.clear token_buf;
+  read_string_literal st token_buf
 
 let next_token (type t) st =
   let module T = (val st.isa_token_m : Isa_token.S with type t = t) in
-  let open Token in
   let has_advanced = skip_comments_and_whitespaces st in
   if has_advanced then White_space
   else
@@ -221,6 +257,7 @@ let next_token (type t) st =
     | 'A' .. 'Z' | 'a' .. 'z' -> name_like_started ~isa_specific:T.name st ch
     | '.' -> name_like_started ~isa_specific:T.directive ~default:Dot st ch
     | '%' -> name_like_started ~isa_specific:T.reserved ~default:Percent st ch
+    | '"' -> string_literal_started st
     | ',' -> Comma
     | ':' -> Colon
     | '(' -> LBracket
@@ -243,7 +280,6 @@ let create isa_token_m inp_m inp =
 
 let to_seq lexer =
   let open Base.Sequence.Generator in
-  let open Token in
   let rec consume_tokens () =
     match next_token lexer with
     | Eof -> yield @@ Eof
