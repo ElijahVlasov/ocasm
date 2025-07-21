@@ -55,6 +55,13 @@ end
 
 open Buffer_like
 
+exception IncorrectEscapeSequence of char
+exception IncorrectHexEscapeSequence of char * char
+exception UnfinishedComment
+exception ExpectedGot of char * char
+exception WrongCharInNumberLiteral of char
+exception JunkSymbol of char
+
 module State = struct
   type ('a, 't) t = {
     isa_token_m : (module Isa_token.S with type t = 't);
@@ -110,14 +117,14 @@ let rec multiline_comment st k =
       skip st;
       k st (next st))
     else multiline_comment st k
-  else if Char.is_eof ch then failwith "Unfinished comment"
+  else if Char.is_eof ch then raise UnfinishedComment
   else multiline_comment st k
 
 let multiline_comment_start st k =
   let open Char in
   let next_ch = next st in
   if next_ch = '*' then multiline_comment st k
-  else failwith "Expected multiline comment"
+  else raise @@ ExpectedGot ('*', next_ch)
 
 let consume_number (type a) st bldr_m =
   let module B = (val bldr_m : Number_builder.S with type t = a) in
@@ -125,7 +132,7 @@ let consume_number (type a) st bldr_m =
   consume_while_true (module B) bldr st B.is_digit;
   let ch = peek st in
   if Char.is_word_separator ch then B.build bldr
-  else failwith "Unexpected symbol"
+  else raise @@ WrongCharInNumberLiteral ch
 
 let bin_number st =
   let open Number_builder in
@@ -160,7 +167,7 @@ let number_start st ch =
         skip st;
         Oct (oct_number st)
     | ch when Char.is_word_separator ch -> Dec (Array.create ~len:1 0L)
-    | _ -> failwith "Unexpected char"
+    | ch -> raise @@ WrongCharInNumberLiteral ch
   else Dec (dec_number st)
 
 let skip_comments_and_whitespaces st =
@@ -212,7 +219,8 @@ let read_escaped st buf =
   let read_hex_escaped st buf =
     let fst = next st in
     let snd = next st in
-    Option.value_exn ~message:"Incorrect hex literal"
+    Option.value_or_thunk ~default:(fun () ->
+        raise @@ IncorrectHexEscapeSequence (fst, snd))
     @@ Char.of_hex_digits_le fst snd
   in
   Buffer.add_char buf
@@ -227,7 +235,7 @@ let read_escaped st buf =
   | 'r' -> '\r'
   | 'x' -> read_hex_escaped st buf
   | '"' -> '"'
-  | _ -> failwith "Unknown escape sequence"
+  | ch -> raise @@ IncorrectEscapeSequence ch
 
 let rec read_string_literal st buf =
   match next st with
@@ -254,26 +262,21 @@ let next_token (type t) st =
     match ch with
     | '\n' -> Eol
     | '0' .. '9' -> number_start st ch
-    | 'A' .. 'Z' | 'a' .. 'z' -> name_like_started ~isa_specific:T.name st ch
+    | 'A' .. 'Z' | 'a' .. 'z' | '_' ->
+        name_like_started ~isa_specific:T.name st ch
     | '.' -> name_like_started ~isa_specific:T.directive ~default:Dot st ch
     | '%' -> name_like_started ~isa_specific:T.reserved ~default:Percent st ch
     | '"' -> string_literal_started st
-    | ',' -> Comma
-    | ':' -> Colon
-    | '(' -> LBracket
-    | ')' -> RBracket
-    | '[' -> LSquare
-    | ']' -> RSquare
-    | '{' -> LCurly
-    | '}' -> RCurly
-    | '!' -> ExclamaitionMark
     | '\x00' -> Eof
     | ch when Char.is_nonascii ch ->
         let token_buf = State.single_buf st in
         Buffer.clear token_buf;
         Buffer.add_char token_buf ch;
         read_proper_name st token_buf
-    | _ -> failwith "Unknown symbol"
+    | ch ->
+        Option.value_or_thunk
+          ~default:(fun () -> raise @@ JunkSymbol ch)
+          (Token.of_special_symbol ch)
 
 let create isa_token_m inp_m inp =
   { isa_token_m; inp_m; inp; token_buf = Lc_buffer.create 1024 }
