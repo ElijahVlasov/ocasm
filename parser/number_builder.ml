@@ -91,10 +91,10 @@ end
 module Dec_builder : S = struct
   type t = unit
 
-  let create () = failwith "Not implemented"
-  let clear st = failwith "Not implemented"
-  let add_char st ch = failwith "Not implemented"
-  let build st = failwith "Not implemented"
+  let create () = ()
+  let clear st = Panic.unimplemented ()
+  let add_char st ch = Panic.unimplemented ()
+  let build st = Panic.unimplemented ()
   let is_digit = Char.is_digit
 end
 
