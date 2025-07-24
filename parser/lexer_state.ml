@@ -174,7 +174,8 @@ let consume_while_true st pred =
   done
 
 let consume_until_nl st =
-  consume_while_true st (fun ch -> not @@ Char.is_newline ch)
+  consume_while_true st (fun ch ->
+      not @@ (Char.is_newline ch || Char.is_eof ch))
 
 let create inp_m inp =
   let open Buffer_like in

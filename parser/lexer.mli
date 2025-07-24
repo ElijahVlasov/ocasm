@@ -13,7 +13,11 @@ module Isa_token : sig
 end
 
 val create :
-  (module Isa_token.S with type t = 't) -> 'a Input.t -> 'a -> ('a, 't) t
+  ?diagnostics:Diagnostics.t ->
+  (module Isa_token.S with type t = 't) ->
+  'a Input.t ->
+  'a ->
+  ('a, 't) t
 
 val next_token : ('a, 't) t -> 't Token.t
 val to_seq : ('a, 't) t -> 't Token.t Sequence.t

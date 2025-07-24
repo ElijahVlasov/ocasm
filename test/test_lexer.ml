@@ -1,3 +1,4 @@
+open Base
 open Ocasm_parser
 open Lexer
 
