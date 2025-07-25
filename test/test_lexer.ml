@@ -30,7 +30,7 @@ let test_single_token content expected () =
     input
     ~f:(fun inp ->
       let lexer = Lexer.create (module MockT) (module I) inp in
-      let got = Lexer.next_token lexer in
+      let got = Lexer.next_token lexer |> Option.value_exn in
       Alcotest.check token "Tokens don't coincide" expected got)
 
 let test_multiple_tokens content expected () =
@@ -41,7 +41,7 @@ let test_multiple_tokens content expected () =
     input
     ~f:(fun inp ->
       let lexer = Lexer.create (module MockT) (module I) inp in
-      let got = Lexer.to_list lexer in
+      let got = Lexer.to_list lexer |> Option.value_exn in
       Alcotest.check (Alcotest.list token) "Tokens don't coincide" expected got)
 
 let tests_single_token =

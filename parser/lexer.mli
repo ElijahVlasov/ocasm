@@ -19,6 +19,6 @@ val create :
   'a ->
   ('a, 't) t
 
-val next_token : ('a, 't) t -> 't Token.t
-val to_seq : ('a, 't) t -> 't Token.t Sequence.t
-val to_list : ('a, 't) t -> 't Token.t list
+val next_token : ('a, 't) t -> 't Token.t option
+val to_seq : ('a, 't) t -> 't Token.t option Sequence.t
+val to_list : ('a, 't) t -> 't Token.t list option

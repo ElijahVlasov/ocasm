@@ -244,7 +244,7 @@ let recover st =
       st.recovery <- None;
       recovery ()
 
-let next_token_aux (type t) st =
+let next_token (type t) st =
   let module T = (val st.isa_m : Isa_token.S with type t = t) in
   try
     recover st;
@@ -282,13 +282,6 @@ let next_token_aux (type t) st =
   | Diagnostics.Non_recoverable -> None
   | e -> raise e
 
-let next_token st =
-  let token_opt = ref (next_token_aux st) in
-  while Option.is_none !token_opt do
-    token_opt := next_token_aux st
-  done;
-  Option.value_exn !token_opt
-
 let create ?diagnostics isa_m inp_m inp =
   let diagnostics =
     Option.value_or_thunk diagnostics ~default:Diagnostics.create
@@ -304,9 +297,9 @@ let to_seq lexer =
   let open Base.Sequence.Generator in
   let rec consume_tokens () =
     match next_token lexer with
-    | Eof -> yield @@ Eof
+    | Some Eof -> yield @@ Some Eof
     | token -> yield token >>= consume_tokens
   in
   run @@ consume_tokens ()
 
-let to_list lexer = Sequence.to_list (to_seq lexer)
+let to_list lexer = Sequence.to_list (to_seq lexer) |> Option.all
