@@ -31,10 +31,16 @@ module type S = sig
   val back_unchecked : t -> unit
 end
 
-module MakePositionedForward (T : T) = struct
-  type t = { unwrap : T.t; mutable line : int; mutable col : int }
-  [@@deriving fields]
+type 'a t = { unwrap : 'a; mutable line : int; mutable col : int }
+[@@deriving fields]
 
+module MakePositionedForward (T : T) = struct
+  type nonrec t = T.t t
+
+  let unwrap = unwrap
+  let line = line
+  let col = col
+  let pos x = (line x, col x)
   let equal x y = x.line = y.line && x.col = y.col
 
   let create ?line ?col unwrap =

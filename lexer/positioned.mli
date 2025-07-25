@@ -30,8 +30,10 @@ module type S = sig
   val back_unchecked : t -> unit
 end
 
+type 'a t
+
 module MakePositionedForward (T : T) : sig
-  type t
+  type nonrec t = T.t t
 
   include F with type t := t
   include S0_M with type t := t

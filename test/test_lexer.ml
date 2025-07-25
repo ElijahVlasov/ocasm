@@ -1,5 +1,5 @@
 open Base
-open Ocasm_parser
+open Ocasm_lexer
 open Lexer
 
 module Mock_token = Token.MkToken (struct
@@ -23,7 +23,7 @@ end
 let token = Alcotest.testable token_fmt Mock_token.equal
 
 let test_single_token content expected () =
-  let module I = Ocasm_parser.Input.StringInput in
+  let module I = Ocasm_lexer.Input.StringInput in
   let input = I.create ~content in
   Input.with_input
     (module I)
@@ -34,7 +34,7 @@ let test_single_token content expected () =
       Alcotest.check token "Tokens don't coincide" expected got)
 
 let test_multiple_tokens content expected () =
-  let module I = Ocasm_parser.Input.StringInput in
+  let module I = Ocasm_lexer.Input.StringInput in
   let input = I.create ~content in
   Input.with_input
     (module I)

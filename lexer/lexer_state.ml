@@ -3,8 +3,9 @@ open Token_builder
 open Ocasm_utils
 
 type 'a t = {
-  inp_m : 'a Input.t;
-  inp : 'a;
+  inp_m : 'a Positioned.t Input.t;
+  pos_m : (module Positioned.S0 with type t = 'a Positioned.t);
+  inp : 'a Positioned.t;
   case_sensitive_builder : case_sensitive Token_builder.t;
   case_insensitive_builder : case_insensitive Token_builder.t;
   bin_bldr : bin number_builder Token_builder.t;
@@ -14,16 +15,28 @@ type 'a t = {
 }
 
 let next (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
+  let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
   I.next st.inp
 
 let peek (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
+  let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
   I.peek st.inp
 
 let skip (type a) st =
-  let module I = (val st.inp_m : Input.S with type t = a) in
+  let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
   I.skip st.inp
+
+let line (type a) st =
+  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
+  P.line st.inp
+
+let col (type a) st =
+  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
+  P.col st.inp
+
+let pos (type a) st =
+  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
+  P.pos st.inp
 
 let with_case_insensitive_builder st f =
   Token_builder.with_builder st.case_insensitive_builder f
@@ -60,13 +73,16 @@ let consume_until_nl st =
   consume_while_true st (fun ch ->
       not @@ (Char.is_newline ch || Char.is_eof ch))
 
-let create inp_m inp =
+let create (type a) inp_m inp =
+  let module I = (val inp_m : Input.S with type t = a) in
+  let module I_pos = Input.MakePositioned (I) in
   let open Token_builder in
   let lower_case_buf = Buffer.create 1024 in
   let original_case_buf = Buffer.create 1024 in
   {
-    inp_m;
-    inp;
+    inp_m = (module I_pos);
+    pos_m = (module I_pos);
+    inp = I_pos.create inp;
     case_sensitive_builder = create_case_sensitive original_case_buf;
     case_insensitive_builder =
       create_case_insensitive original_case_buf lower_case_buf;

@@ -1,5 +1,5 @@
 (library
- (name ocasm_parser)
+ (name ocasm_lexer)
  (libraries base ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))

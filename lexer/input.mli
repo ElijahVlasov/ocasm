@@ -65,7 +65,7 @@ end
 val with_input : 'a t -> 'a -> f:('a -> 'b) -> 'b
 
 module MakePositioned (Input : S) : sig
-  type t
+  type t = Input.t Positioned.t
 
   module Cursor : sig
     include C with type input := t

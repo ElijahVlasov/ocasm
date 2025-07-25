@@ -1,6 +1,6 @@
 open Alcotest
 open Base
-open Ocasm_parser
+open Ocasm_lexer
 
 let short_file = "assets/input/short_file.txt"
 let long_file_1 = "assets/input/long_file_1.txt"
