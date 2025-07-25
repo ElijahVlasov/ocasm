@@ -1,6 +1,7 @@
 open Base
 open Ocasm_utils
 open Token
+open Token_builder
 open Lexer_state
 
 module Isa_token = struct
@@ -124,10 +125,10 @@ let multiline_comment_start st k =
   if next_ch = '*' then multiline_comment st k
   else error st @@ Expected_vs_got ('*', next_ch)
 
-let consume_number st is_digit buf =
-  add_to_buf_while_true st.lexer_state buf is_digit;
+let consume_number st is_digit builder =
+  add_to_builder_while_true st.lexer_state builder is_digit;
   let ch = peek st.lexer_state in
-  if Char.is_word_separator ch then Buffer.to_number buf
+  if Char.is_word_separator ch then Token_builder.to_number builder
   else error st @@ Wrong_char_in_number_literal ch
 
 let number_start st ch =
@@ -137,23 +138,23 @@ let number_start st ch =
     match Char.lowercase (peek st.lexer_state) with
     | 'x' ->
         skip st.lexer_state;
-        with_number_builder st.lexer_state Hex @@ fun buf ->
-        Token.Hex (consume_number st Hex_builder.is_digit buf)
+        with_number_builder st.lexer_state Hex @@ fun builder ->
+        Token.Hex (consume_number st Hex_builder.is_digit builder)
     | 'b' ->
         skip st.lexer_state;
-        with_number_builder st.lexer_state Bin @@ fun buf ->
-        Token.Bin (consume_number st Bin_builder.is_digit buf)
+        with_number_builder st.lexer_state Bin @@ fun builder ->
+        Token.Bin (consume_number st Bin_builder.is_digit builder)
     | ch when Char.is_octal ch ->
         (* Note we shouldn't skip here as the next char *)
         (* is a part of the number in question. *)
-        with_number_builder st.lexer_state Oct @@ fun buf ->
-        Token.Oct (consume_number st Oct_builder.is_digit buf)
+        with_number_builder st.lexer_state Oct @@ fun builder ->
+        Token.Oct (consume_number st Oct_builder.is_digit builder)
     | ch when Char.is_word_separator ch -> Dec (Array.create ~len:1 0L)
     | ch -> error st @@ Wrong_char_in_number_literal ch
   else
-    with_number_builder st.lexer_state Dec @@ fun buf ->
-    Buffer.add_char buf ch;
-    Token.Dec (consume_number st Dec_builder.is_digit buf)
+    with_number_builder st.lexer_state Dec @@ fun builder ->
+    Token_builder.add_char builder ch;
+    Token.Dec (consume_number st Dec_builder.is_digit builder)
 
 let skip_comments_and_whitespaces st =
   let rec skip_comments_and_whitespaces ~has_advanced st ch =
@@ -174,32 +175,32 @@ let skip_comments_and_whitespaces st =
   in
   skip_comments_and_whitespaces ~has_advanced:false st (peek st.lexer_state)
 
-let read_proper_name st (buf : case_sensitive Buffer.t) =
-  add_to_buf_while_true st buf (fun ch ->
+let read_proper_name st (builder : case_sensitive Token_builder.t) =
+  add_to_builder_while_true st builder (fun ch ->
       Char.is_valid_name_symbol ch || Char.is_nonascii ch);
-  Name (Buffer.contents buf)
+  Name (Token_builder.contents builder)
 
-let read_name st buf k =
-  add_to_buf_while_true st buf Char.is_valid_name_symbol;
+let read_name st builder k =
+  add_to_builder_while_true st builder Char.is_valid_name_symbol;
   let ch = ref (peek st) in
   if Char.is_nonascii !ch then
-    continue_case_sensitive_buf st @@ read_proper_name st
+    continue_case_sensitive_builder st @@ read_proper_name st
   else (* TODO: what if we return thunks here instead of strings *)
-    k (Buffer.contents buf) (Buffer.lc_contents buf)
+    k (Token_builder.contents builder) (Token_builder.lc_contents builder)
 
 let name_like_started (type t) ~isa_specific ?default isa_m st ch =
   let module T = (val isa_m : Isa_token.S with type t = t) in
-  with_case_insensitive_buf st @@ fun buf ->
-  Buffer.add_char buf ch;
-  read_name st buf @@ fun name lc_name ->
+  with_case_insensitive_builder st @@ fun builder ->
+  Token_builder.add_char builder ch;
+  read_name st builder @@ fun name lc_name ->
   if String.length lc_name <> 1 || Option.is_none default then
     match isa_specific lc_name with
     | None -> Name name
     | Some t -> Isa_specific t
   else Option.value_exn default
 
-let read_escaped k st buf =
-  Buffer.add_char buf
+let read_escaped k st builder =
+  Token_builder.add_char builder
   @@
   match next st.lexer_state with
   | 'a' -> '\x07'
@@ -212,30 +213,32 @@ let read_escaped k st buf =
   | 'x' ->
       let fst = next st.lexer_state in
       let snd = next st.lexer_state in
-      Option.value_or_thunk ~default:(fun () ->
-          error ~k st @@ Incorrect_hex_escape_sequence (fst, snd))
-      @@ Char.of_hex_digits_le fst snd
+      Char.of_hex_digits_le fst snd
+      |> Option.value_or_thunk ~default:(fun () ->
+             error ~k st @@ Incorrect_hex_escape_sequence (fst, snd))
   | '"' -> '"'
   | ch -> error ~k st @@ Incorrect_escape_sequence ch
 
-let rec read_string_literal st buf =
-  let k = Recovery.Custom (fun () -> Fn.ignore @@ read_string_literal st buf) in
+let rec read_string_literal st builder =
+  let k =
+    Recovery.Custom (fun () -> Fn.ignore @@ read_string_literal st builder)
+  in
   match next st.lexer_state with
-  | '"' -> String_literal (Buffer.contents buf)
+  | '"' -> String_literal (Token_builder.contents builder)
   | '\\' ->
-      read_escaped k st buf;
-      read_string_literal st buf
+      read_escaped k st builder;
+      read_string_literal st builder
   | '\n' ->
       warn ~k st Newline_in_string_literal;
-      Buffer.add_char buf '\n';
-      read_string_literal st buf
+      Token_builder.add_char builder '\n';
+      read_string_literal st builder
   | '\x00' -> fail st Unfinished_string_literal
   | ch ->
-      Buffer.add_char buf ch;
-      read_string_literal st buf
+      Token_builder.add_char builder ch;
+      read_string_literal st builder
 
 let string_literal_started st =
-  with_case_sensitive_buf st.lexer_state @@ read_string_literal st
+  with_case_sensitive_builder st.lexer_state @@ read_string_literal st
 
 let recover st =
   match st.recovery with
@@ -268,13 +271,13 @@ let next_token (type t) st =
       | '"' -> string_literal_started st
       | '\x00' -> Eof
       | ch when Char.is_nonascii ch ->
-          with_case_sensitive_buf st.lexer_state @@ fun buf ->
-          Buffer.add_char buf ch;
-          read_proper_name st.lexer_state buf
+          with_case_sensitive_builder st.lexer_state @@ fun builder ->
+          Token_builder.add_char builder ch;
+          read_proper_name st.lexer_state builder
       | ch ->
-          Option.value_or_thunk
-            ~default:(fun () -> error st @@ Junk_symbol ch)
-            (Token.of_special_symbol ch)
+          Token.of_special_symbol ch
+          |> Option.value_or_thunk ~default:(fun () ->
+                 error st @@ Junk_symbol ch)
   with
   | Diagnostics.Recoverable k ->
       st.recovery <- Some k;
