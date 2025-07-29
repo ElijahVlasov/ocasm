@@ -10,6 +10,8 @@ val skip : 'a t -> unit
 val pos : 'a t -> int * int
 val line : 'a t -> int
 val col : 'a t -> int
+val start_token : 'a t -> unit
+val get_start : 'a t -> int * int
 
 val with_case_insensitive_builder :
   'a t -> (case_insensitive Token_builder.t -> 'b) -> 'b

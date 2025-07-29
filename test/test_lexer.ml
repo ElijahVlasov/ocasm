@@ -18,6 +18,8 @@ module MockT : Isa_token.S with type t = unit = struct
   let directive _ = None
   let name _ = None
   let reserved _ = None
+  let to_string _ = ""
+  let equal _ _ = true
 end
 
 let token = Alcotest.testable token_fmt Mock_token.equal
@@ -30,7 +32,7 @@ let test_single_token content expected () =
     input
     ~f:(fun inp ->
       let lexer = Lexer.create (module MockT) (module I) inp in
-      let got = Lexer.next_token lexer |> Option.value_exn in
+      let got = Lexer.next_token lexer |> Option.value_exn |> fst in
       Alcotest.check token "Tokens don't coincide" expected got)
 
 let test_multiple_tokens content expected () =
@@ -41,7 +43,7 @@ let test_multiple_tokens content expected () =
     input
     ~f:(fun inp ->
       let lexer = Lexer.create (module MockT) (module I) inp in
-      let got = Lexer.to_list lexer |> Option.value_exn in
+      let got = Lexer.to_list lexer |> Option.value_exn |> List.map ~f:fst in
       Alcotest.check (Alcotest.list token) "Tokens don't coincide" expected got)
 
 let tests_single_token =

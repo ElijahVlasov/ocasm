@@ -12,6 +12,7 @@ type 'a t = {
   oct_bldr : oct number_builder Token_builder.t;
   dec_bldr : dec number_builder Token_builder.t;
   hex_bldr : hex number_builder Token_builder.t;
+  mutable start_pos : int * int;
 }
 
 let next (type a) st =
@@ -37,6 +38,9 @@ let col (type a) st =
 let pos (type a) st =
   let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
   P.pos st.inp
+
+let start_token st = st.start_pos <- pos st
+let get_start st = st.start_pos
 
 let with_case_insensitive_builder st f =
   Token_builder.with_builder st.case_insensitive_builder f
@@ -90,4 +94,5 @@ let create (type a) inp_m inp =
     oct_bldr = create_number_builder original_case_buf Oct;
     dec_bldr = create_number_builder original_case_buf Dec;
     hex_bldr = create_number_builder original_case_buf Hex;
+    start_pos = (0, 0);
   }

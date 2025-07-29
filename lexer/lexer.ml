@@ -11,6 +11,9 @@ module Isa_token = struct
     val directive : string -> t option
     val name : string -> t option
     val reserved : string -> t option
+
+    include To_string.S with type t := t
+    include Equal.S with type t := t
   end
 end
 
@@ -74,6 +77,7 @@ type ('a, 't) t = {
 }
 
 let error_aux recovery st err =
+  let pos = pos st.lexer_state in
   let open Diagnostics in
   error
     ?recovery:(Recovery.to_func st.lexer_state recovery)
@@ -81,13 +85,14 @@ let error_aux recovery st err =
     {
       msg = Error.msg err;
       id = Error.id err;
-      left = (0, 0);
-      right = (0, 0);
+      left = pos;
+      right = pos;
       file = Path.of_string "";
       ctx = "";
     }
 
 let warn_aux recovery st w : 'b =
+  let pos = pos st.lexer_state in
   let open Diagnostics in
   warn
     ?recovery:(Recovery.to_func st.lexer_state recovery)
@@ -95,8 +100,8 @@ let warn_aux recovery st w : 'b =
     {
       msg = Warning.msg w;
       id = Warning.id w;
-      left = (0, 0);
-      right = (0, 0);
+      left = pos;
+      right = pos;
       file = Path.of_string "";
       ctx = "";
     }
@@ -107,6 +112,30 @@ let fail st err = error_aux Recovery.No_recovery st err
 
 open Warning
 open Error
+
+type token_info = {
+  starts : int * int;
+  ends : int * int;
+  string : unit -> string;
+}
+
+let return_info_simple (type t) st token =
+  let module T = (val st.isa_m : Isa_token.S with type t = t) in
+  let module T = MkToken (T) in
+  ( token,
+    {
+      starts = get_start st.lexer_state;
+      ends = pos st.lexer_state;
+      string = (fun () -> T.to_string token);
+    } )
+
+let return_info_thunk st token_thunk token =
+  ( token,
+    {
+      starts = get_start st.lexer_state;
+      ends = pos st.lexer_state;
+      string = token_thunk;
+    } )
 
 let rec multiline_comment st k =
   let open Char in
@@ -140,21 +169,27 @@ let number_start st ch =
         skip st.lexer_state;
         with_number_builder st.lexer_state Hex @@ fun builder ->
         Token.Hex (consume_number st Hex_builder.is_digit builder)
+        |> return_info_thunk st (fun () -> Token_builder.contents builder)
     | 'b' ->
         skip st.lexer_state;
         with_number_builder st.lexer_state Bin @@ fun builder ->
         Token.Bin (consume_number st Bin_builder.is_digit builder)
+        |> return_info_thunk st (fun () -> Token_builder.contents builder)
     | ch when Char.is_octal ch ->
         (* Note we shouldn't skip here as the next char *)
         (* is a part of the number in question. *)
         with_number_builder st.lexer_state Oct @@ fun builder ->
         Token.Oct (consume_number st Oct_builder.is_digit builder)
-    | ch when Char.is_word_separator ch -> Dec (Array.create ~len:1 0L)
+        |> return_info_thunk st (fun () -> Token_builder.contents builder)
+    | ch when Char.is_word_separator ch ->
+        Token.Dec (Array.create ~len:1 0L)
+        |> return_info_thunk st (fun () -> "0")
     | ch -> error st @@ Wrong_char_in_number_literal ch
   else
     with_number_builder st.lexer_state Dec @@ fun builder ->
     Token_builder.add_char builder ch;
     Token.Dec (consume_number st Dec_builder.is_digit builder)
+    |> return_info_thunk st (fun () -> Token_builder.contents builder)
 
 let skip_comments_and_whitespaces st =
   let rec skip_comments_and_whitespaces ~has_advanced st ch =
@@ -176,28 +211,28 @@ let skip_comments_and_whitespaces st =
   skip_comments_and_whitespaces ~has_advanced:false st (peek st.lexer_state)
 
 let read_proper_name st (builder : case_sensitive Token_builder.t) =
-  add_to_builder_while_true st builder (fun ch ->
+  add_to_builder_while_true st.lexer_state builder (fun ch ->
       Char.is_valid_name_symbol ch || Char.is_nonascii ch);
-  Name (Token_builder.contents builder)
+  Name (Token_builder.contents builder) |> return_info_simple st
 
 let read_name st builder k =
-  add_to_builder_while_true st builder Char.is_valid_name_symbol;
-  let ch = ref (peek st) in
+  add_to_builder_while_true st.lexer_state builder Char.is_valid_name_symbol;
+  let ch = ref (peek st.lexer_state) in
   if Char.is_nonascii !ch then
-    continue_case_sensitive_builder st @@ read_proper_name st
+    continue_case_sensitive_builder st.lexer_state @@ read_proper_name st
   else (* TODO: what if we return thunks here instead of strings *)
     k (Token_builder.contents builder) (Token_builder.lc_contents builder)
 
-let name_like_started (type t) ~isa_specific ?default isa_m st ch =
-  let module T = (val isa_m : Isa_token.S with type t = t) in
-  with_case_insensitive_builder st @@ fun builder ->
+let name_like_started (type t) ~isa_specific ?default st ch =
+  let module T = (val st.isa_m : Isa_token.S with type t = t) in
+  with_case_insensitive_builder st.lexer_state @@ fun builder ->
   Token_builder.add_char builder ch;
   read_name st builder @@ fun name lc_name ->
   if String.length lc_name <> 1 || Option.is_none default then
     match isa_specific lc_name with
-    | None -> Name name
-    | Some t -> Isa_specific t
-  else Option.value_exn default
+    | None -> Name name |> return_info_simple st
+    | Some t -> Isa_specific t |> return_info_thunk st (fun () -> lc_name)
+  else Option.value_exn default |> return_info_thunk st (fun () -> lc_name)
 
 let read_escaped k st builder =
   Token_builder.add_char builder
@@ -224,7 +259,8 @@ let rec read_string_literal st builder =
     Recovery.Custom (fun () -> Fn.ignore @@ read_string_literal st builder)
   in
   match next st.lexer_state with
-  | '"' -> String_literal (Token_builder.contents builder)
+  | '"' ->
+      String_literal (Token_builder.contents builder) |> return_info_simple st
   | '\\' ->
       read_escaped k st builder;
       read_string_literal st builder
@@ -250,34 +286,33 @@ let recover st =
 let next_token (type t) st =
   let module T = (val st.isa_m : Isa_token.S with type t = t) in
   try
+    start_token st.lexer_state;
+    let return_info_simple = return_info_simple st in
     recover st;
     let has_advanced = skip_comments_and_whitespaces st in
     Option.some
     @@
-    if has_advanced then White_space
+    if has_advanced then return_info_simple White_space
     else
       let ch = next st.lexer_state in
       match ch with
-      | '\n' -> Eol
+      | '\n' -> Eol |> return_info_simple
       | '0' .. '9' -> number_start st ch
       | 'A' .. 'Z' | 'a' .. 'z' | '_' ->
-          name_like_started ~isa_specific:T.name st.isa_m st.lexer_state ch
-      | '.' ->
-          name_like_started ~isa_specific:T.directive ~default:Dot st.isa_m
-            st.lexer_state ch
-      | '%' ->
-          name_like_started ~isa_specific:T.reserved ~default:Percent st.isa_m
-            st.lexer_state ch
+          name_like_started ~isa_specific:T.name st ch
+      | '.' -> name_like_started ~isa_specific:T.directive ~default:Dot st ch
+      | '%' -> name_like_started ~isa_specific:T.reserved ~default:Percent st ch
       | '"' -> string_literal_started st
-      | '\x00' -> Eof
+      | '\x00' -> Eof |> return_info_simple
       | ch when Char.is_nonascii ch ->
           with_case_sensitive_builder st.lexer_state @@ fun builder ->
           Token_builder.add_char builder ch;
-          read_proper_name st.lexer_state builder
+          read_proper_name st builder
       | ch ->
           Token.of_special_symbol ch
           |> Option.value_or_thunk ~default:(fun () ->
                  error st @@ Junk_symbol ch)
+          |> return_info_simple
   with
   | Diagnostics.Recoverable k ->
       st.recovery <- Some k;
@@ -300,7 +335,7 @@ let to_seq lexer =
   let open Base.Sequence.Generator in
   let rec consume_tokens () =
     match next_token lexer with
-    | Some Eof -> yield @@ Some Eof
+    | Some (Eof, info) as tok -> yield tok
     | token -> yield token >>= consume_tokens
   in
   run @@ consume_tokens ()
