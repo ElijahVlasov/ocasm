@@ -113,15 +113,23 @@ let fail st err = error_aux Recovery.No_recovery st err
 open Warning
 open Error
 
-type token_info = {
-  starts : int * int;
-  ends : int * int;
-  string : unit -> string;
-}
+module Token_info = struct
+  type t = {
+    starts : int * int;
+    ends : int * int;
+    string : unit -> string;
+        [@equal fun x y -> String.equal (x ()) (y ())]
+        [@printer fun fmt x -> fprintf fmt "%s" (x ())]
+  }
+  [@@deriving eq, show]
+
+  let to_string = show
+end
 
 let return_info_simple (type t) st token =
   let module T = (val st.isa_m : Isa_token.S with type t = t) in
   let module T = MkToken (T) in
+  let open Token_info in
   ( token,
     {
       starts = get_start st.lexer_state;
@@ -130,6 +138,7 @@ let return_info_simple (type t) st token =
     } )
 
 let return_info_thunk st token_thunk token =
+  let open Token_info in
   ( token,
     {
       starts = get_start st.lexer_state;

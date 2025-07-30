@@ -23,12 +23,13 @@ val create :
   'a ->
   ('a, 't) t
 
-type token_info = {
-  starts : int * int;
-  ends : int * int;
-  string : unit -> string;
-}
+module Token_info : sig
+  type t = { starts : int * int; ends : int * int; string : unit -> string }
 
-val next_token : ('a, 't) t -> ('t Token.t * token_info) option
-val to_seq : ('a, 't) t -> ('t Token.t * token_info) option Sequence.t
-val to_list : ('a, 't) t -> ('t Token.t * token_info) list option
+  include Equal.S with type t := t
+  include To_string.S with type t := t
+end
+
+val next_token : ('a, 't) t -> ('t Token.t * Token_info.t) option
+val to_seq : ('a, 't) t -> ('t Token.t * Token_info.t) option Sequence.t
+val to_list : ('a, 't) t -> ('t Token.t * Token_info.t) list option
