@@ -23,6 +23,8 @@ module Error = struct
         Printf.sprintf "unexpected character '%c' in a number literal" c
     | Junk_symbol c -> Printf.sprintf "junk symbol '%c'" c
 
+  (* TODO: these id assignments should be automatic or there must *)
+  (*       another mechanism for that. *)
   let id = function
     | Incorrect_escape_sequence _ -> 0
     | Incorrect_hex_escape_sequence (_, _) -> 1

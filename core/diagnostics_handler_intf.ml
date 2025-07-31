@@ -16,6 +16,11 @@ module type Intf = sig
 
   module type S = S
 
-  module Kitchen_sink_handler : S
+  module Kitchen_sink_handler : sig
+    include S
+
+    val to_list : t -> Diagnostic_message.dyn list
+  end
+
   module Std_handler : S
 end

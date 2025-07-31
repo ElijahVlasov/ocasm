@@ -18,6 +18,8 @@ module Kitchen_sink_handler = struct
       | Some recovery -> Recoverable recovery
     in
     match msg.typ with Warning -> () | Error -> error ()
+
+  let to_list handler = Queue.to_list handler
 end
 
 module Std_handler = struct

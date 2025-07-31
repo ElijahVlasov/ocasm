@@ -1,6 +1,7 @@
 open Base
 open Core
 open Ocasm_lexer
+open Ocasm_utils
 open Lexer
 
 module Mock_token = Token.MkToken (struct
@@ -29,6 +30,9 @@ let token_info_fmt fmt info =
   Stdlib.Format.fprintf fmt "%s" (Token_info.to_string info)
 
 let token_info = Alcotest.testable token_info_fmt Token_info.equal
+
+let diagnostic_message =
+  Alcotest.testable Diagnostic_message.Dyn.pp Diagnostic_message.Dyn.equal
 
 module Private = struct
   let create_lexer inp_m inp =
@@ -98,13 +102,36 @@ module Private = struct
     val mk : string -> string -> Diagnostic_message.Dyn.t list -> t
     val to_test_case : t -> unit Alcotest.test_case
   end = struct
-    type t = unit
+    type t = string * string * Diagnostic_message.Dyn.t list
 
-    let mk _ _ _ = ()
+    let mk name content expected = (name, content, expected)
 
-    let to_test_case _ =
-      Alcotest.test_case "" `Quick @@ fun () ->
-      Alcotest.check Alcotest.unit "" () ()
+    let run content expected () =
+      let module I = Ocasm_lexer.Input.StringInput in
+      let input = I.create ~content in
+      Input.with_input
+        (module I)
+        input
+        ~f:(fun inp ->
+          let open Diagnostics_handler in
+          let handler = Kitchen_sink_handler.create () in
+          let lexer =
+            Lexer.create
+              (module MockT)
+              (module I)
+              inp
+              (module Kitchen_sink_handler)
+              handler
+          in
+          let _ = Lexer.to_list lexer in
+          List.iter
+            (Kitchen_sink_handler.to_list handler |> List.zip_exn expected)
+            ~f:(fun (expected, got) ->
+              Alcotest.check diagnostic_message "Tokens don't coincide" expected
+                got))
+
+    let to_test_case (name, content, expected) =
+      Alcotest.test_case name `Quick @@ run content expected
   end
 end
 
@@ -224,9 +251,52 @@ let test_multiple_tokens =
       ];
   ][@@ocamlformat "disable"]
 
+let test_error_messages =
+  let open Diagnostics_test in
+  let open Diagnostic_message in
+  [
+    mk "Incorrect number literal" "0x123421lol\n0z2141235 42r\n0xff 0x22 0x33"
+      [
+        Dyn
+          {
+            typ = Error;
+            msg = "unexpected character 'l' in a number literal";
+            id = 4;
+            starts = Location.create 1 9;
+            ends = Location.create 1 9;
+            file = Path.of_string "";
+            ctx = "";
+          };
+        Dyn
+          {
+            typ = Error;
+            msg = "unexpected character 'z' in a number literal";
+            id = 4;
+            starts = Location.create 2 2;
+            ends = Location.create 2 2;
+            file = Path.of_string "";
+            ctx = "";
+          };
+      ];
+    mk "Incorrect escaped sequence" "\"sdsdga\\uqwqw\""
+      [
+        Dyn
+          {
+            typ = Error;
+            msg = "incorrect escape sequence '\\u'";
+            id = 0;
+            starts = Location.create 1 10;
+            ends = Location.create 1 10;
+            file = Path.of_string "";
+            ctx = "";
+          };
+      ];
+  ]
+
 let suite =
   List.concat
     [
       List.map ~f:Single_token_test.to_test_case test_single_token;
       List.map ~f:Multiple_token_test.to_test_case test_multiple_tokens;
+      List.map ~f:Diagnostics_test.to_test_case test_error_messages;
     ]
