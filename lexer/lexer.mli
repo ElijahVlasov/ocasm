@@ -1,7 +1,8 @@
 open Base
+open Core
 open Ocasm_utils
 
-type ('a, 't) t
+type ('a, 'h, 't) t
 
 module Isa_token : sig
   module type S = sig
@@ -17,19 +18,20 @@ module Isa_token : sig
 end
 
 val create :
-  ?diagnostics:Diagnostics.t ->
   (module Isa_token.S with type t = 't) ->
   'a Input.t ->
   'a ->
-  ('a, 't) t
+  (module Diagnostics_handler.S with type t = 'h) ->
+  'h ->
+  ('a, 'h, 't) t
 
 module Token_info : sig
-  type t = { starts : int * int; ends : int * int; string : unit -> string }
+  type t = { starts : Location.t; ends : Location.t; string : unit -> string }
 
   include Equal.S with type t := t
   include To_string.S with type t := t
 end
 
-val next_token : ('a, 't) t -> ('t Token.t * Token_info.t) option
-val to_seq : ('a, 't) t -> ('t Token.t * Token_info.t) option Sequence.t
-val to_list : ('a, 't) t -> ('t Token.t * Token_info.t) list option
+val next_token : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) option
+val to_seq : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) option Sequence.t
+val to_list : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) list option

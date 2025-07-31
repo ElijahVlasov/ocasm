@@ -1,32 +1,45 @@
 open Base
+open Core
 open Token_builder
 
-type 'a t
+type ('a, 'h) t
 
-val create : 'a Input.t -> 'a -> 'a t
-val next : 'a t -> char
-val peek : 'a t -> char
-val skip : 'a t -> unit
-val pos : 'a t -> int * int
-val line : 'a t -> int
-val col : 'a t -> int
-val start_token : 'a t -> unit
-val get_start : 'a t -> int * int
+val create :
+  'a Input.t ->
+  'a ->
+  (module Diagnostics_handler.S with type t = 'h) ->
+  'h ->
+  ('a, 'h) t
+
+val next : ('a, 'h) t -> char
+val peek : ('a, 'h) t -> char
+val skip : ('a, 'h) t -> unit
+val pos : ('a, 'h) t -> Location.t
+val line : ('a, 'h) t -> int
+val col : ('a, 'h) t -> int
+val start_token : ('a, 'h) t -> unit
+val get_start : ('a, 'h) t -> Location.t
 
 val with_case_insensitive_builder :
-  'a t -> (case_insensitive Token_builder.t -> 'b) -> 'b
+  ('a, 'h) t -> (case_insensitive Token_builder.t -> 'b) -> 'b
 
 val with_case_sensitive_builder :
-  'a t -> (case_sensitive Token_builder.t -> 'b) -> 'b
+  ('a, 'h) t -> (case_sensitive Token_builder.t -> 'b) -> 'b
 
 val continue_case_sensitive_builder :
-  'a t -> (case_sensitive Token_builder.t -> 'b) -> 'b
+  ('a, 'h) t -> (case_sensitive Token_builder.t -> 'b) -> 'b
 
 val with_number_builder :
-  'a t -> 'b radix_witness -> ('b number_builder Token_builder.t -> 'c) -> 'c
+  ('a, 'h) t ->
+  'b radix_witness ->
+  ('b number_builder Token_builder.t -> 'c) ->
+  'c
 
 val add_to_builder_while_true :
-  'a t -> 'b Token_builder.t -> (char -> bool) -> unit
+  ('a, 'h) t -> 'b Token_builder.t -> (char -> bool) -> unit
 
-val consume_while_true : 'a t -> (char -> bool) -> unit
-val consume_until_nl : 'a t -> unit
+val consume_while_true : ('a, 'h) t -> (char -> bool) -> unit
+val consume_until_nl : ('a, 'h) t -> unit
+val warning : ('a, 'h) t -> ?k:Errors.recovery -> Errors.warning -> unit
+val error : ('a, 'h) t -> ?k:Errors.recovery -> Errors.error -> 'b
+val fail : ('a, 'h) t -> Errors.error -> 'b

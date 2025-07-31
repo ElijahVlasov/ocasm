@@ -1,4 +1,5 @@
 open Base
+open Core
 open Ocasm_lexer
 open Lexer
 
@@ -30,6 +31,14 @@ let token_info_fmt fmt info =
 let token_info = Alcotest.testable token_info_fmt Token_info.equal
 
 module Private = struct
+  let create_lexer inp_m inp =
+    let open Diagnostics_handler in
+    Lexer.create
+      (module MockT)
+      inp_m inp
+      (module Kitchen_sink_handler)
+      (Kitchen_sink_handler.create ())
+
   module Single_token_test : sig
     type t
 
@@ -47,7 +56,7 @@ module Private = struct
         (module I)
         input
         ~f:(fun inp ->
-          let lexer = Lexer.create (module MockT) (module I) inp in
+          let lexer = create_lexer (module I) inp in
           let got = Lexer.next_token lexer |> Option.value_exn |> fst in
           Alcotest.check token "Tokens don't coincide" expected got)
 
@@ -72,7 +81,7 @@ module Private = struct
         (module I)
         input
         ~f:(fun inp ->
-          let lexer = Lexer.create (module MockT) (module I) inp in
+          let lexer = create_lexer (module I) inp in
           Lexer.to_list lexer |> Option.value_exn |> List.zip_exn expected
           |> List.iter ~f:(fun (expected, got) ->
                  Alcotest.check
@@ -81,6 +90,21 @@ module Private = struct
 
     let to_test_case (name, content, expected) =
       Alcotest.test_case name `Quick @@ run content expected
+  end
+
+  module Diagnostics_test : sig
+    type t
+
+    val mk : string -> string -> Diagnostic_message.Dyn.t list -> t
+    val to_test_case : t -> unit Alcotest.test_case
+  end = struct
+    type t = unit
+
+    let mk _ _ _ = ()
+
+    let to_test_case _ =
+      Alcotest.test_case "" `Quick @@ fun () ->
+      Alcotest.check Alcotest.unit "" () ()
   end
 end
 
@@ -135,68 +159,68 @@ let test_multiple_tokens =
       "Curly brackets" 
       "{}"
       [
-        (LCurly, { starts = (1, 1); ends = (1, 2); string = (fun () -> "{") });
-        (RCurly, { starts = (1, 2); ends = (1, 3); string = (fun () -> "}") });
-        (Eof,    { starts = (1, 3); ends = (1, 4); string = (fun () -> "EOF") });
+        (LCurly, { starts = Location.create 1 1; ends = Location.create 1 2; string = (fun () -> "{") });
+        (RCurly, { starts = Location.create 1 2; ends = Location.create 1 3; string = (fun () -> "}") });
+        (Eof,    { starts = Location.create 1 3; ends = Location.create 1 4; string = (fun () -> "EOF") });
       ];
     mk 
       "Three \\n's" 
       "\n \n\n"
       [
         ( Eol, 
-          { starts = (1, 1); ends = (2, 1); string = (fun () -> "\\n") } );
+          { starts = Location.create 1 1; ends = Location.create 2 1; string = (fun () -> "\\n") } );
         ( White_space,
-          { starts = (2, 1); ends = (2, 2); string = (fun () -> " ") } );
+          { starts = Location.create 2 1; ends = Location.create 2 2; string = (fun () -> " ") } );
         ( Eol, 
-          { starts = (2, 2); ends = (3, 1); string = (fun () -> "\\n") } );
+          { starts = Location.create 2 2; ends = Location.create 3 1; string = (fun () -> "\\n") } );
         ( Eol, 
-          { starts = (3, 1); ends = (4, 1); string = (fun () -> "\\n") } );
+          { starts = Location.create 3 1; ends = Location.create 4 1; string = (fun () -> "\\n") } );
         ( Eof, 
-          { starts = (4, 1); ends = (4, 2); string = (fun () -> "EOF") } );
+          { starts = Location.create 4 1; ends = Location.create 4 2; string = (fun () -> "EOF") } );
       ];
     mk 
       "Brackets and single line comment" 
       "() # a single line comment\n()"
       [
         ( LBracket, 
-          { starts = (1, 1);  ends = (1, 2);  string = (fun () -> "(") } );
+          { starts = Location.create 1 1;  ends = Location.create 1 2;  string = (fun () -> "(") } );
         ( RBracket, 
-          { starts = (1, 2);  ends = (1, 3);  string = (fun () -> ")") } );
+          { starts = Location.create 1 2;  ends = Location.create 1 3;  string = (fun () -> ")") } );
         ( White_space,
-          { starts = (1, 3);  ends = (1, 27); string = (fun () -> " ") } );
+          { starts = Location.create 1 3;  ends = Location.create 1 27; string = (fun () -> " ") } );
         ( Eol, 
-          { starts = (1, 27); ends = (2, 1);  string = (fun () -> "\\n") } );
+          { starts = Location.create 1 27; ends = Location.create 2 1;  string = (fun () -> "\\n") } );
         ( LBracket, 
-          { starts = (2, 1);  ends = (2, 2);  string = (fun () -> "(") } );
+          { starts = Location.create 2 1;  ends = Location.create 2 2;  string = (fun () -> "(") } );
         ( RBracket, 
-          { starts = (2, 2);  ends = (2, 3);  string = (fun () -> ")") } );
+          { starts = Location.create 2 2;  ends = Location.create 2 3;  string = (fun () -> ")") } );
         ( Eof, 
-          { starts = (2, 3);  ends = (2, 4);  string = (fun () -> "EOF") } );
+          { starts = Location.create 2 3;  ends = Location.create 2 4;  string = (fun () -> "EOF") } );
       ];
     mk "4 Names" "name1    name2\t \tna_____me3\n    \t....na..me.4"
       [
         ( Name "name1",
-          { starts = (1, 1);  ends = (1, 6);  string = (fun () -> "name1") } );
+          { starts = Location.create 1 1;  ends = Location.create 1 6;  string = (fun () -> "name1") } );
         ( White_space,
-          { starts = (1, 6);  ends = (1, 10); string = (fun () -> " ") } );
+          { starts = Location.create 1 6;  ends = Location.create 1 10; string = (fun () -> " ") } );
         ( Name "name2",
-          { starts = (1, 10); ends = (1, 15); string = (fun () -> "name2") } );
+          { starts = Location.create 1 10; ends = Location.create 1 15; string = (fun () -> "name2") } );
         ( White_space,
-          { starts = (1, 15); ends = (1, 18); string = (fun () -> " ") } );
+          { starts = Location.create 1 15; ends = Location.create 1 18; string = (fun () -> " ") } );
         ( Name "na_____me3",
           {
-            starts = (1, 18); ends = (1, 28); string = (fun () -> "na_____me3");
+            starts = Location.create 1 18; ends = Location.create 1 28; string = (fun () -> "na_____me3");
           } );
         ( Eol, 
-          { starts = (1, 28); ends = (2, 1);  string = (fun () -> "\\n") } );
+          { starts = Location.create 1 28; ends = Location.create 2 1;  string = (fun () -> "\\n") } );
         ( White_space,
-          { starts = (2, 1);  ends = (2, 6);  string = (fun () -> " ") } );
+          { starts = Location.create 2 1;  ends = Location.create 2 6;  string = (fun () -> " ") } );
         ( Name "....na..me.4",
           {
-            starts = (2, 6);  ends = (2, 18); string = (fun () -> "....na..me.4");
+            starts = Location.create 2 6;  ends = Location.create 2 18; string = (fun () -> "....na..me.4");
           } );
         ( Eof, 
-          { starts = (2, 18); ends = (2, 19); string = (fun () -> "EOF") } );
+          { starts = Location.create 2 18; ends = Location.create 2 19; string = (fun () -> "EOF") } );
       ];
   ][@@ocamlformat "disable"]
 

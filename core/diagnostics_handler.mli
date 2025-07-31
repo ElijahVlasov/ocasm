@@ -1,0 +1,1 @@
+include Diagnostics_handler_intf.Intf

@@ -1,18 +1,21 @@
 open Base
+open Core
 open Token_builder
 open Ocasm_utils
 
-type 'a t = {
+type ('a, 'h) t = {
   inp_m : 'a Positioned.t Input.t;
   pos_m : (module Positioned.S0 with type t = 'a Positioned.t);
   inp : 'a Positioned.t;
+  dgn_handler_m : (module Diagnostics_handler.S with type t = 'h);
+  dgn_handler : 'h;
   case_sensitive_builder : case_sensitive Token_builder.t;
   case_insensitive_builder : case_insensitive Token_builder.t;
   bin_bldr : bin number_builder Token_builder.t;
   oct_bldr : oct number_builder Token_builder.t;
   dec_bldr : dec number_builder Token_builder.t;
   hex_bldr : hex number_builder Token_builder.t;
-  mutable start_pos : int * int;
+  mutable start_pos : Location.t;
 }
 
 let next (type a) st =
@@ -37,7 +40,8 @@ let col (type a) st =
 
 let pos (type a) st =
   let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
-  P.pos st.inp
+  let line, col = P.pos st.inp in
+  Location.create line col
 
 let start_token st = st.start_pos <- pos st
 let get_start st = st.start_pos
@@ -77,7 +81,38 @@ let consume_until_nl st =
   consume_while_true st (fun ch ->
       not @@ (Char.is_newline ch || Char.is_eof ch))
 
-let create (type a) inp_m inp =
+let diagnostics_aux (type h) (st : (_, h) t) ?k msg =
+  let recovery_to_func st =
+    let open Errors in
+    function
+    | No_recovery -> None
+    | Read_to_eol -> Some (fun () -> consume_until_nl st)
+    | Custom k -> Some k
+  in
+  let module Diagnostics_handler =
+    (val st.dgn_handler_m : Diagnostics_handler.S with type t = h)
+  in
+  let open Errors in
+  let recovery = Option.value ~default:Read_to_eol k |> recovery_to_func st in
+  Diagnostics_handler.throw ?recovery st.dgn_handler @@ msg
+
+let warning st ?k warn =
+  let open Errors in
+  Warning.to_diagnostic_message (Warning.Warning warn) (pos st) (pos st)
+    (Path.of_string "") ""
+  |> diagnostics_aux ?k st
+
+let error st ?k err =
+  let open Errors in
+  Error.to_diagnostic_message (Error.Error err) (pos st) (pos st)
+    (Path.of_string "") ""
+  |> diagnostics_aux ?k st
+
+let fail st err =
+  let open Errors in
+  error st ~k:No_recovery err
+
+let create (type a) inp_m inp dgn_handler_m dgn_handler =
   let module I = (val inp_m : Input.S with type t = a) in
   let module I_pos = Input.MakePositioned (I) in
   let open Token_builder in
@@ -87,6 +122,8 @@ let create (type a) inp_m inp =
     inp_m = (module I_pos);
     pos_m = (module I_pos);
     inp = I_pos.create inp;
+    dgn_handler_m;
+    dgn_handler;
     case_sensitive_builder = create_case_sensitive original_case_buf;
     case_insensitive_builder =
       create_case_insensitive original_case_buf lower_case_buf;
@@ -94,5 +131,5 @@ let create (type a) inp_m inp =
     oct_bldr = create_number_builder original_case_buf Oct;
     dec_bldr = create_number_builder original_case_buf Dec;
     hex_bldr = create_number_builder original_case_buf Hex;
-    start_pos = (0, 0);
+    start_pos = Location.create 0 0;
   }
