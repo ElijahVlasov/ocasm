@@ -1,5 +1,3 @@
-open Base
-
 type case_insensitive
 type case_sensitive
 type 'a number_builder

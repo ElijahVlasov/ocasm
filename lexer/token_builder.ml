@@ -1,5 +1,4 @@
-open Base
-open Ocasm_utils
+open! Import
 
 module Private = struct
   module type S = sig

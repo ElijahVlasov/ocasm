@@ -1,5 +1,4 @@
-open Base
-open Ocasm_utils
+open! Import
 
 exception WrongDigit of char
 
@@ -68,12 +67,12 @@ module MkBuilder (D : D) = struct
       let rec consume_aux lst arr diff i =
         match lst with
         | [] -> ()
-        | limb :: [] -> Array.set arr i (shift_right_logical limb diff)
+        | limb :: [] -> arr.(i) <- shift_right_logical limb diff
         | limb :: (next :: rst as tail) ->
             let shifted = shift_right_logical limb diff in
             let next_diff = next land mask in
             let next_diff = shift_left next_diff diff_comp in
-            Array.set arr i (shifted lor next_diff);
+            arr.(i) <- shifted lor next_diff;
             consume_aux tail arr diff (Int.succ i)
       in
       consume_aux lst arr diff 0

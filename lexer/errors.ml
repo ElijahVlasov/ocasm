@@ -1,5 +1,4 @@
-open Base
-open Core
+open Import
 include Errors_intf
 
 module Recovery = struct

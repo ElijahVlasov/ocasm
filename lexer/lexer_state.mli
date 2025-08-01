@@ -1,5 +1,4 @@
-open Base
-open Core
+open! Import
 open Token_builder
 
 type ('a, 'h) t

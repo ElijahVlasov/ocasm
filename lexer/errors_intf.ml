@@ -1,5 +1,4 @@
-open Core
-open Ocasm_utils
+open Import
 
 type recovery = No_recovery | Read_to_eol | Custom of (unit -> unit)
 

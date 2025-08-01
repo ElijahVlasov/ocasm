@@ -1,5 +1,4 @@
-open Base
-open Ocasm_utils
+open! Import
 
 module type C0 = sig
   type t

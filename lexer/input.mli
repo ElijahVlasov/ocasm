@@ -1,4 +1,4 @@
-open Base
+open! Import
 
 module type C0 = sig
   type t
