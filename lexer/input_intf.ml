@@ -3,6 +3,7 @@ open Import
 module type S0 = sig
   type t
 
+  val path : t -> Path.t
   val next : t -> char
   val peek : t -> char
   val close : t -> unit

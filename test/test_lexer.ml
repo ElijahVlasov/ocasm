@@ -55,7 +55,7 @@ module Private = struct
 
     let run content expected () =
       let module I = Ocasm_lexer.Input.StringInput in
-      let input = I.create ~content in
+      let input = I.create content in
       Input.with_input
         (module I)
         input
@@ -80,7 +80,7 @@ module Private = struct
 
     let run content expected () =
       let module I = Ocasm_lexer.Input.StringInput in
-      let input = I.create ~content in
+      let input = I.create content in
       Input.with_input
         (module I)
         input
@@ -108,7 +108,7 @@ module Private = struct
 
     let run content expected () =
       let module I = Ocasm_lexer.Input.StringInput in
-      let input = I.create ~content in
+      let input = I.create content in
       Input.with_input
         (module I)
         input

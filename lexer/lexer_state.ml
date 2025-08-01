@@ -30,6 +30,10 @@ let skip (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
   I.skip st.inp
 
+let path (type a) st =
+  let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
+  I.path st.inp
+
 let line st = Positioned.line st.inp
 let col st = Positioned.col st.inp
 let pos st = Positioned.pos st.inp
@@ -92,15 +96,13 @@ let diagnostics_aux (type h) st ?k msg =
 let warning st ?k warn =
   let open Errors in
   let open Warning in
-  Warning.to_diagnostic_message (Warning warn) (pos st) (pos st)
-    (Path.of_string "") ""
+  Warning.to_diagnostic_message (Warning warn) (pos st) (pos st) (path st) ""
   |> diagnostics_aux ?k st
 
 let error st ?k err =
   let open Errors in
   let open Error in
-  Error.to_diagnostic_message (Error err) (pos st) (pos st) (Path.of_string "")
-    ""
+  Error.to_diagnostic_message (Error err) (pos st) (pos st) (path st) ""
   |> diagnostics_aux ?k st
 
 let fail st err =

@@ -4,5 +4,6 @@ type t = private string
 
 include Equal.S with type t := t
 
+val empty : t
 val of_string : string -> t
 val to_string : t -> string

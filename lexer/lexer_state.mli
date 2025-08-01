@@ -18,6 +18,7 @@ val line : ('a, 'h) t -> int
 val col : ('a, 'h) t -> int
 val start_token : ('a, 'h) t -> unit
 val get_start : ('a, 'h) t -> Location.t
+val path : ('a, 'h) t -> Path.t
 
 val with_case_insensitive_builder :
   ('a, 'h) t -> (case_insensitive Token_builder.t -> 'b) -> 'b
