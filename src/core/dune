@@ -1,5 +1,6 @@
 (library
- (name core)
+ (name ocasm_core)
+ (public_name ocasm_core)
  (libraries base ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))

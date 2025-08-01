@@ -1,5 +1,5 @@
 open Import
-include Lexer_intf
+include Ocasm_lexer_intf
 
 module Isa_token = struct
   module type S = sig
@@ -16,9 +16,19 @@ end
 
 type ('a, 'h, 't) t = {
   isa_m : (module Isa_token.S with type t = 't);
+      (** First-class module related to the ISA-specific tokens the lexer is
+          supposed to work with. *)
   state : ('a, 'h) Lexer_state.t;
+      (** Low-level lexer state (position in the file, errors, token builders).
+      *)
   mutable recovery : (unit -> unit) option;
+      (** If an error has happened this field will contain a means to recover
+          from it and continue lexing. I.e. if [recovery] is [Some f] then after
+          calling [f ()] the lexer can continue its work. *)
 }
+(** The main lexer state type. The main component is the lexer state. *)
+
+(**/**)
 
 module Token_info = struct
   type t = {
@@ -27,12 +37,16 @@ module Token_info = struct
     string : unit -> string;
         [@equal fun x y -> String.equal (x ()) (y ())]
         [@printer fun fmt x -> fprintf fmt "%s" (x ())]
+        (** A thunk of the physical representation of the token in the source
+            file. *)
   }
   [@@deriving eq, show]
 
   let to_string = show
 end
 
+(** Prepare token info for [token] by supplying [fun () -> T.to_string token].
+*)
 let return_info_simple (type t) st token =
   let module T = Token.MkToken ((val st.isa_m : Isa_token.S with type t = t)) in
   let open Token_info in
@@ -43,6 +57,7 @@ let return_info_simple (type t) st token =
       string = (fun () -> T.to_string token);
     } )
 
+(** Now supply a proper thunk. *)
 let return_info_thunk st token_thunk token =
   let open Token_info in
   ( token,
@@ -56,6 +71,7 @@ let rec multiline_comment st k =
   let open Char in
   let ch = Lexer_state.next st.state in
   if ch = '*' then
+    (* We're potentially wrapping up the comment *)
     if Lexer_state.peek st.state = '/' then (
       Lexer_state.skip st.state;
       k st (Lexer_state.next st.state))

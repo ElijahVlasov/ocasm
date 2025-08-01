@@ -1,6 +1,7 @@
 (library
- (name lexer)
- (libraries base core ocasm_utils)
+ (name ocasm_lexer)
+ (public_name ocasm_lexer)
+ (libraries base ocasm_core ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

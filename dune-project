@@ -5,6 +5,7 @@
 (generate_opam_files true)
 
 (using ctypes 0.3)
+
 (using menhir 3.0)
 
 (package
@@ -21,15 +22,27 @@
   ctypes-foreign
   getopt
   menhir
-  (ocaml (>= 5.3.0))
+  (ocaml
+   (>= 5.3.0))
   ocamlformat
   ppx_deriving
   ppx_compare
   ppx_fields_conv
   ppx_deriving_hash
-  ppx_sexp_conv
-  )
+  ppx_sexp_conv)
  (tags
   ("riscv" "assembler" "assembly"))
-  (source
-   (github ElijahVlasov/ocasm)))
+ (source
+  (github ElijahVlasov/ocasm)))
+
+(package
+ (name ocasm_core)
+ (depends base))
+
+(package
+ (name ocasm_utils)
+ (depends base))
+
+(package
+ (name ocasm_lexer)
+ (depends base ocasm_core ocasm_utils))

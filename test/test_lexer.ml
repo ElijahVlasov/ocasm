@@ -1,6 +1,6 @@
 open Base
-open Core
-open Lexer
+open Ocasm_core
+open Ocasm_lexer
 open Ocasm_utils
 
 module Mock_token = Token.MkToken (struct
@@ -36,7 +36,7 @@ let diagnostic_message =
 module Private = struct
   let create_lexer inp_m inp =
     let open Diagnostics_handler in
-    Lexer.create
+    Ocasm_lexer.create
       (module MockT)
       inp_m inp
       (module Kitchen_sink_handler)
@@ -53,14 +53,14 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Lexer.Input.StringInput in
+      let module I = Ocasm_lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)
         input
         ~f:(fun inp ->
           let lexer = create_lexer (module I) inp in
-          let got = Lexer.next_token lexer |> Option.value_exn |> fst in
+          let got = Ocasm_lexer.next_token lexer |> Option.value_exn |> fst in
           Alcotest.check token "Tokens don't coincide" expected got)
 
     let to_test_case (name, content, expected) =
@@ -78,14 +78,14 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Lexer.Input.StringInput in
+      let module I = Ocasm_lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)
         input
         ~f:(fun inp ->
           let lexer = create_lexer (module I) inp in
-          Lexer.to_list lexer |> Option.value_exn |> List.zip_exn expected
+          Ocasm_lexer.to_list lexer |> Option.value_exn |> List.zip_exn expected
           |> List.iter ~f:(fun (expected, got) ->
                  Alcotest.check
                    (Alcotest.pair token token_info)
@@ -106,7 +106,7 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Lexer.Input.StringInput in
+      let module I = Ocasm_lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)
@@ -115,14 +115,14 @@ module Private = struct
           let open Diagnostics_handler in
           let handler = Kitchen_sink_handler.create () in
           let lexer =
-            Lexer.create
+            Ocasm_lexer.create
               (module MockT)
               (module I)
               inp
               (module Kitchen_sink_handler)
               handler
           in
-          let _ = Lexer.to_list lexer in
+          let _ = Ocasm_lexer.to_list lexer in
           List.iter
             (Kitchen_sink_handler.to_list handler |> List.zip_exn expected)
             ~f:(fun (expected, got) ->

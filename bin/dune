@@ -1,4 +1,5 @@
 (executable
+ (package ocasm)
  (public_name ocasm)
  (name main)
  (libraries ocasm_cli))
