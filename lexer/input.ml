@@ -1,27 +1,4 @@
-open! Import
-
-module type C0 = sig
-  type t
-
-  val next : t -> char option
-  val step : t -> bool
-  val step_unchecked : t -> unit
-  val back : t -> bool
-  val back_unchecked : t -> unit
-  val get : t -> char
-
-  include Equal.S with type t := t
-end
-
-type 'a cursor = (module C0 with type t = 'a)
-
-module type C = sig
-  include C0
-
-  type input
-
-  val create : input -> t
-end
+open Import
 
 module type S0 = sig
   type t
@@ -29,10 +6,6 @@ module type S0 = sig
   val next : t -> char
   val peek : t -> char
   val close : t -> unit
-
-  module Cursor : C with type input := t
-
-  val advance : t -> Cursor.t -> unit
 end
 
 module type S = sig
@@ -44,8 +17,6 @@ module type S = sig
   val read_buf : t -> Buffer.t -> unit
 end
 
-let eof = '\x00'
-
 module MkS (S0 : S0) = struct
   include S0
 
@@ -54,9 +25,8 @@ module MkS (S0 : S0) = struct
   let skip_n_times ~n st = Fn.apply_n_times ~n (fun _ -> skip st) ()
 
   let rec read_buf st buf =
-    let ( <> ) = Char.( <> ) in
     let next_ch = next st in
-    if next_ch <> eof then (
+    if not @@ Char.is_eof next_ch then (
       Buffer.add_char buf next_ch;
       read_buf st buf)
 end
@@ -69,7 +39,7 @@ module StringInput0 = struct
   let peek st =
     if st.cursor < String.length st.content then
       String.unsafe_get st.content st.cursor
-    else eof
+    else '\x00'
 
   let next st =
     let next_ch = peek st in
@@ -78,36 +48,6 @@ module StringInput0 = struct
 
   let create ~content = { content; cursor = 0 }
   let close st = ()
-
-  module Cursor = struct
-    type input = t
-    type t = { parent : input; mutable pos : int }
-
-    let equal x y = x.pos = y.pos
-    let create parent = { parent; pos = parent.cursor }
-    let get i = String.unsafe_get i.parent.content i.pos
-
-    let next i =
-      let next_pos = i.pos + 1 in
-      if next_pos = String.length i.parent.content then None
-      else (
-        i.pos <- next_pos;
-        Some (get i))
-
-    let step i = Option.is_some @@ next i
-
-    let back i =
-      let is_parent_cursor = i.pos <> i.parent.cursor in
-      if is_parent_cursor then i.pos <- i.pos - 1;
-      is_parent_cursor
-
-    let step_unchecked i = i.pos <- i.pos + 1
-    let back_unchecked i = i.pos <- i.pos - 1
-  end
-
-  let advance st i =
-    let open Cursor in
-    st.cursor <- i.pos
 end
 
 module StringInput = struct
@@ -121,19 +61,19 @@ module FileInput0 = struct
     mutable buf2 : bytes;
     mutable cursor : int;
     mutable file_pos : int;
-    in_ch : Stdlib.In_channel.t;
+    in_ch : In_channel.t;
   }
 
   let chunk_len = 4096
 
   let read st buf =
-    let module I = Stdlib.In_channel in
+    let module I = In_channel in
     let read = I.input st.in_ch buf 0 chunk_len in
     if read < chunk_len then (
       (* we have hit the eof *)
       st.file_pos <- -1;
       (* let's mark the eof in the buffer *)
-      Bytes.set buf read eof)
+      Bytes.set buf read '\x00')
     else st.file_pos <- st.file_pos + read
 
   let fetch_chunk st =
@@ -152,9 +92,8 @@ module FileInput0 = struct
   let peek st = Bytes.unsafe_get st.buf1 st.cursor
 
   let next st =
-    let ( <> ) = Char.( <> ) in
     let next_ch = peek st in
-    if next_ch <> eof then
+    if not @@ Char.is_eof next_ch then
       if st.cursor = chunk_len - 1 then (
         fetch_chunk st;
         st.cursor <- 0)
@@ -162,7 +101,7 @@ module FileInput0 = struct
     next_ch
 
   let create ~path =
-    let module I = Stdlib.In_channel in
+    let module I = In_channel in
     let st =
       {
         buf1 = Bytes.create chunk_len;
@@ -176,72 +115,7 @@ module FileInput0 = struct
     read st st.buf2;
     st
 
-  let close st = Stdlib.In_channel.close st.in_ch
-
-  module Cursor = struct
-    module Pointer = struct
-      type t = int ref
-
-      let max_ptr = (chunk_len * 2) - 1
-      let is_last i = !i = max_ptr
-      let is_out_of_bounds i = !i = max_ptr + 1
-      let inc_unsafe i = i := !i + 1
-      let inc i = if not (is_last i) then inc_unsafe i
-      let dec_unsafe i = i := !i - 1
-      let dec i = if !i <> 0 then dec_unsafe i
-      let buffer_flag_mask = chunk_len
-      let buffer_ind_mask = chunk_len - 1
-      let is_second_buffer i = !i land buffer_flag_mask <> 0
-      let is_first_buffer i = !i land buffer_flag_mask = 0
-      let ind i = !i land buffer_ind_mask
-    end
-
-    type input = t
-    type t = { parent : input; pos : Pointer.t }
-
-    let equal x y = !(x.pos) = !(y.pos)
-    let create parent = { parent; pos = ref parent.cursor }
-
-    let get i =
-      let buf =
-        if Pointer.is_first_buffer i.pos then i.parent.buf1 else i.parent.buf2
-      in
-      let ind = Pointer.ind i.pos in
-      Bytes.unsafe_get buf ind
-
-    let is_last i = Pointer.is_last i.pos
-
-    let next i =
-      if is_last i then None
-      else
-        let ch = get i in
-        let ( = ) = Char.equal in
-        if ch = eof then None
-        else (
-          Pointer.inc_unsafe i.pos;
-          let ch = get i in
-          if ch = eof then (
-            Pointer.dec_unsafe i.pos;
-            None)
-          else Some ch)
-
-    let step i = Option.is_some @@ next i
-    let step_unchecked i = Pointer.inc_unsafe i.pos
-
-    let back i =
-      let is_parent_cursor = !(i.pos) <> i.parent.cursor in
-      if is_parent_cursor then Pointer.dec i.pos;
-      is_parent_cursor
-
-    let back_unchecked i = Pointer.dec_unsafe i.pos
-  end
-
-  let advance st i =
-    let open Cursor in
-    let open Cursor.Pointer in
-    let ind = ind i.pos in
-    if is_second_buffer i.pos then fetch_chunk st;
-    st.cursor <- ind
+  let close st = In_channel.close st.in_ch
 end
 
 module FileInput = struct
@@ -266,50 +140,6 @@ module MakePositioned0 (Input : S) = struct
 
   let create parent = create parent
   let close st = Input.close (unwrap st)
-
-  module Cursor = struct
-    include Positioned.MakePositioned (Input.Cursor)
-    module C = Input.Cursor
-
-    let create parent =
-      let parent_csr = C.create (PF.unwrap parent) in
-      let line = PF.line parent in
-      let col = PF.col parent in
-      create parent_csr ~line ~col
-
-    let get i = C.get (unwrap i)
-
-    let next (i : t) =
-      let ch = get i in
-      let mb_next = C.next (unwrap i) in
-      if Option.is_some mb_next then step i ch;
-      mb_next
-
-    let step_unchecked i =
-      let ch = get i in
-      step i ch;
-      C.step_unchecked (unwrap i)
-
-    let step i =
-      let ch = get i in
-      let has_stepped = C.step (unwrap i) in
-      if has_stepped then step i ch;
-      has_stepped
-
-    let back_unchecked i =
-      C.back_unchecked (unwrap i);
-      back i (get i)
-
-    let back i =
-      let has_backed = C.back (unwrap i) in
-      if has_backed then back i (get i);
-      has_backed
-  end
-
-  let advance st i =
-    let open Cursor in
-    PF.set_pos st (line i) (col i);
-    Input.advance (PF.unwrap st) (unwrap i)
 end
 
 module MakePositioned (Input : S) = struct
@@ -317,17 +147,3 @@ module MakePositioned (Input : S) = struct
   include MkS (X)
   include X
 end
-
-let consume_cursor_while_true (type a) ~pred ~buf csr_m i =
-  let module C = (val csr_m : C0 with type t = a) in
-  let ch = ref (C.next i) in
-  while Option.is_some !ch && pred (Option.value_exn !ch) do
-    Buffer.add_char buf (Option.value_exn !ch);
-    ch := C.next i
-  done
-
-let consume_between_cursors (type a) ~buf csr_m ~s ~e =
-  let module C = (val csr_m : C0 with type t = a) in
-  while not @@ C.equal s e do
-    Buffer.add_char buf (Option.value_exn (C.next s))
-  done
