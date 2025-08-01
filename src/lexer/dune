@@ -1,5 +1,5 @@
 (library
- (name ocasm_lexer)
+ (name lexer)
  (libraries base core ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))

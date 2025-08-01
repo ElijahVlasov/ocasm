@@ -1,4 +1,5 @@
 open Import
+include module type of Lexer_intf
 
 type ('a, 'h, 't) t
 

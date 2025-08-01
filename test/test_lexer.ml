@@ -1,8 +1,7 @@
 open Base
 open Core
-open Ocasm_lexer
-open Ocasm_utils
 open Lexer
+open Ocasm_utils
 
 module Mock_token = Token.MkToken (struct
   type t = unit
@@ -54,7 +53,7 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Ocasm_lexer.Input.StringInput in
+      let module I = Lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)
@@ -79,7 +78,7 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Ocasm_lexer.Input.StringInput in
+      let module I = Lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)
@@ -107,7 +106,7 @@ module Private = struct
     let mk name content expected = (name, content, expected)
 
     let run content expected () =
-      let module I = Ocasm_lexer.Input.StringInput in
+      let module I = Lexer.Input.StringInput in
       let input = I.create content in
       Input.with_input
         (module I)

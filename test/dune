@@ -1,6 +1,6 @@
 (test
  (name test)
- (libraries alcotest base core ctypes rv32 ocasm_bfd ocasm_lexer)
+ (libraries alcotest base core ctypes rv32 ocasm_bfd lexer)
  (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib -cclib -lbfd)
  (deps
   (glob_files assets/input/*)))

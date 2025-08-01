@@ -1,4 +1,5 @@
 open Import
+include Lexer_intf
 
 module Isa_token = struct
   module type S = sig

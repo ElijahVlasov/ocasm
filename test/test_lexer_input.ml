@@ -1,6 +1,6 @@
 open Alcotest
 open Base
-open Ocasm_lexer
+open Lexer
 open Ocasm_utils
 
 let short_file = "assets/input/short_file.txt"
