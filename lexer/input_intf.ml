@@ -31,7 +31,6 @@ module type Intf = sig
     type t = Input.t Positioned.t
 
     include S with type t := t
-    include Positioned.S0 with type t := t
 
     val create : Input.t -> t
   end

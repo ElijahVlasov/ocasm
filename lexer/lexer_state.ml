@@ -5,7 +5,6 @@ include struct
 
   type ('a, 'h) t = {
     inp_m : 'a Positioned.t Input.t;
-    pos_m : (module Positioned.S0 with type t = 'a Positioned.t);
     inp : 'a Positioned.t;
     dgn_handler_m : (module Diagnostics_handler.S with type t = 'h);
     dgn_handler : 'h;
@@ -31,19 +30,9 @@ let skip (type a) st =
   let module I = (val st.inp_m : Input.S with type t = a Positioned.t) in
   I.skip st.inp
 
-let line (type a) st =
-  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
-  P.line st.inp
-
-let col (type a) st =
-  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
-  P.col st.inp
-
-let pos (type a) st =
-  let module P = (val st.pos_m : Positioned.S0 with type t = a Positioned.t) in
-  let line, col = P.pos st.inp in
-  Location.create line col
-
+let line st = Positioned.line st.inp
+let col st = Positioned.col st.inp
+let pos st = Positioned.pos st.inp
 let start_token st = st.start_pos <- pos st
 let get_start st = st.start_pos
 
@@ -126,7 +115,6 @@ let create (type a) inp_m inp dgn_handler_m dgn_handler =
   let original_case_buf = Buffer.create 1024 in
   {
     inp_m = (module I_pos);
-    pos_m = (module I_pos);
     inp = I_pos.create inp;
     dgn_handler_m;
     dgn_handler;

@@ -4,7 +4,10 @@ include Input_intf
 module MkS (S0 : S0) = struct
   include S0
 
-  let skip = Fn.compose Fn.ignore S0.next
+  let skip st =
+    let (_ : char) = next st in
+    ()
+
   let next_n_times ~n st = Fn.apply_n_times ~n (fun _ -> next st) '\x00'
   let skip_n_times ~n st = Fn.apply_n_times ~n (fun _ -> skip st) ()
 
@@ -110,22 +113,22 @@ let with_input (type a) inp_m inp ~f =
   Exn.protect ~finally:(fun () -> I.close inp) ~f:(fun () -> f inp)
 
 module MakePositioned0 (Input : S) = struct
-  module PF = Positioned.MakePositionedForward (Input)
-  include PF
+  type t = Input.t Positioned.t
 
-  let peek st = Input.peek (unwrap st)
+  open Positioned
+
+  let create parent = create parent
 
   let next st =
     let ch = Input.next (unwrap st) in
-    PF.step st ch;
+    step st ch;
     ch
 
-  let create parent = create parent
-  let close st = Input.close (unwrap st)
+  let peek st = Positioned.with_value Input.peek st
+  let close st = Positioned.with_value Input.close st
 end
 
 module MakePositioned (Input : S) = struct
-  module X = MakePositioned0 (Input)
-  include MkS (X)
-  include X
+  include MkS (MakePositioned0 (Input))
+  include MakePositioned0 (Input)
 end
