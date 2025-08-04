@@ -43,11 +43,25 @@ module StringInput = struct
 end
 
 module FileInput0 = struct
+  (* This is my attempt at implementing the section 3.2 from the dragon book.
+
+     We have two buffers [buf1] and [buf2]. The [cursor] always points to a
+     position in the first buffer. Once the end of the buffer has been reached
+     [buf2] becomes [buf1] and another chunk is read into [buf2].
+
+     If the file is read to the end we no longer perform the procedure above.
+
+     Invariant: [cursor] always point to a valid position in the buffer (in
+     other words, [cursor < Bytes.length buf1]). *)
+
+  (* TODO: assess if there's even a point in double-buffer architecture. Can one
+     buffer be enough? *)
+
   type t = {
     mutable buf1 : bytes;
     mutable buf2 : bytes;
     mutable cursor : int;
-    mutable path_pos : int;
+    mutable is_eof : bool;
     path : Path.t;
     in_ch : In_channel.t;
   }
@@ -55,28 +69,27 @@ module FileInput0 = struct
 
   let chunk_len = 4096
 
+  let swp_bufs st =
+    let tmp = st.buf1 in
+    st.buf1 <- st.buf2;
+    st.buf2 <- tmp
+
   let read st buf =
     let module I = In_channel in
     let read = I.input st.in_ch buf 0 chunk_len in
     if read < chunk_len then (
       (* we have hit the eof *)
-      st.path_pos <- -1;
+      st.is_eof <- true;
       (* let's mark the eof in the buffer *)
       Bytes.set buf read '\x00')
-    else st.path_pos <- st.path_pos + read
 
   let fetch_chunk st =
     (* If we have already hit the eof *)
     (* just move on to the next buffer *)
-    if st.path_pos = -1 then st.buf1 <- st.buf2
-    else
-      let swp_bufs st =
-        let tmp = st.buf1 in
-        st.buf1 <- st.buf2;
-        st.buf2 <- tmp
-      in
+    if st.is_eof then st.buf1 <- st.buf2
+    else (
       swp_bufs st;
-      read st st.buf2
+      read st st.buf2)
 
   let peek st = Bytes.unsafe_get st.buf1 st.cursor
 
@@ -95,7 +108,7 @@ module FileInput0 = struct
         buf1 = Bytes.create chunk_len;
         buf2 = Bytes.create chunk_len;
         cursor = 0;
-        path_pos = 0;
+        is_eof = false;
         path;
         in_ch = In_channel.open_text (path :> string);
       }
