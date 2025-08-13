@@ -1,21 +1,8 @@
 open Import
 include Ocasm_lexer_intf
 
-module Isa_token = struct
-  module type S = sig
-    type t
-
-    val directive : string -> t option
-    val name : string -> t option
-    val reserved : string -> t option
-
-    include To_string.S with type t := t
-    include Equal.S with type t := t
-  end
-end
-
 type ('a, 'h, 't) t = {
-  isa_m : (module Isa_token.S with type t = 't);
+  isa_m : 't Isa_token.t;
       (** First-class module related to the ISA-specific tokens the lexer is
           supposed to work with. *)
   state : ('a, 'h) Lexer_state.t;

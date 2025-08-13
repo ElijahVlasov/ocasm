@@ -1,5 +1,6 @@
 (library
  (name ocasm_bfd)
+ (public_name ocasm_bfd)
  (libraries base ctypes ctypes-foreign ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))

@@ -9,28 +9,6 @@ type ('a, 'h, 't) t
     - ['h] is for diagnostics handler type.
     - ['t] is for ISA-specific token type. *)
 
-module Isa_token : sig
-  module type S = sig
-    type t
-    (** This type is supposed to be the type of ISA-specific tokens. I.e.
-        registers, instruction names, etc. *)
-
-    val directive : string -> t option
-    (** Tries to parse a directive (something that starts with ['.']). *)
-
-    val name : string -> t option
-    (** Tries to parse an ISA-name (register, instruction, etc). *)
-
-    val reserved : string -> t option
-    (** Tries to parse a resrved keyword (something that starts with ['%']). *)
-
-    include To_string.S with type t := t
-    include Equal.S with type t := t
-  end
-end
-
-(**/**)
-
 module Token_info : sig
   type t = {
     starts : Location.t;  (** Here the token starts *)
@@ -44,7 +22,7 @@ module Token_info : sig
 end
 
 val create :
-  (module Isa_token.S with type t = 't) ->
+  't Isa_token.t ->
   'a Input.t ->
   'a ->
   (module Diagnostics_handler.S with type t = 'h) ->

@@ -36,6 +36,14 @@
   (github ElijahVlasov/ocasm)))
 
 (package
+ (name ocasm_bfd)
+ (depends base ctypes ctypes-foreign))
+
+(package
+ (name ocasm_assembler)
+ (depends base ocasm_bfd))
+
+(package
  (name ocasm_core)
  (depends base))
 
@@ -46,3 +54,7 @@
 (package
  (name ocasm_lexer)
  (depends base ocasm_core ocasm_utils))
+
+(package
+ (name ocasm_parser)
+ (depends base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils))

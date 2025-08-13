@@ -1,15 +1,14 @@
 (library
- (name ocasm_assembler)
- (public_name ocasm_assembler)
- (libraries ocasm_bfd)
+ (name ocasm_parser)
+ (public_name ocasm_parser)
+ (libraries base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess
   (pps
    ppx_deriving.eq
-   ppx_compare
    ppx_deriving_hash
    ppx_deriving.ord
-   ppx_deriving.show
    ppx_fields_conv
+   ppx_deriving.show
    ppx_sexp_conv)))
