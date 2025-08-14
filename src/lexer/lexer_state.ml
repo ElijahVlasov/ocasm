@@ -78,7 +78,7 @@ let consume_until_nl st =
   consume_while_true st (fun ch ->
       not @@ (Char.is_newline ch || Char.is_eof ch))
 
-let diagnostics_aux (type h) st ?k msg =
+let diagnostics_aux (type h) st ?(k = Errors.Read_to_eol) msg =
   let recovery_to_func st =
     let open Errors in
     function
@@ -89,8 +89,7 @@ let diagnostics_aux (type h) st ?k msg =
   let module Diagnostics_handler =
     (val st.dgn_handler_m : Diagnostics_handler.S with type t = h)
   in
-  let open Errors in
-  let recovery = Option.value ~default:Read_to_eol k |> recovery_to_func st in
+  let recovery = recovery_to_func st k in
   Diagnostics_handler.throw ?recovery st.dgn_handler @@ msg
 
 let warning st ?k warn =
