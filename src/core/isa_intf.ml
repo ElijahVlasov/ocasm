@@ -10,8 +10,6 @@ module Type = struct
             [off(reg)], where [off] is an offset of size [off_size] and [reg] is
             a register of size base_size. *)
     | String  (** String literal. *)
-    | List of t  (** A list of [t]. *)
-    | Name  (** A symbol. *)
   [@@deriving eq]
 end
 

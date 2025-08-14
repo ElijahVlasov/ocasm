@@ -1,15 +1,6 @@
 open! Import
-include module type of Parser_dsl_intf
 
-type ('reg, 'dir, 'opcode, 'res) t
-
-module Selector : sig
-  type ('reg, 'dir, 'opcode, 'res, 'a) t
-
-  val res : ('reg, 'dir, 'opcode, 'res, 'res) t
-  val dir : ('reg, 'dir, 'opcode, 'res, 'dir) t
-  val opcode : ('reg, 'dir, 'opcode, 'res, 'opcode) t
-end
+type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 
 val create :
   ?path:Path.t ->
@@ -17,12 +8,50 @@ val create :
   'dir Isa.Expr.t ->
   'opcode Isa.Expr.t ->
   'res Isa.Expr.t ->
-  ('reg, 'dir, 'opcode, 'res) t
+  word_size:int ->
+  build_instruction:('reg, 'opcode, 'rel, 'out) Builder.Builder_fn.t ->
+  build_directive:('reg, 'dir, 'rel, 'out) Builder.Builder_fn.t ->
+  build_reserved:('reg, 'res, 'rel, 'out) Builder.Builder_fn.t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 
-val arg_type :
-  ('reg, 'dir, 'opcode, 'res) t ->
-  ('reg, 'dir, 'opcode, 'res, 'a) Selector.t ->
-  'a ->
-  Isa.Type.t list
+val with_opcode_builder :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  'opcode ->
+  (('reg, 'opcode, 'rel, 'out) Builder.t -> 'a) ->
+  'a
 
-val path : ('reg, 'dir, 'opcode, 'res) t -> Path.t
+val with_dir_builder :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  'dir ->
+  (('reg, 'dir, 'rel, 'out) Builder.t -> 'a) ->
+  'a
+
+val add_register :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  ('reg, 'comm, 'rel, 'out) Builder.t ->
+  'reg ->
+  unit
+
+val add_rel :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  ('reg, 'comm, 'rel, 'out) Builder.t ->
+  'rel Relocatable.t ->
+  unit
+
+val add_string :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  ('reg, 'comm, 'rel, 'out) Builder.t ->
+  string ->
+  unit
+
+val add_base_offset :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  ('reg, 'comm, 'rel, 'out) Builder.t ->
+  'reg ->
+  'rel Relocatable.t ->
+  unit
+
+val build :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  ('reg, 'comm, 'rel, 'out) Builder.t ->
+  'out
