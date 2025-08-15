@@ -1,10 +1,11 @@
 open! Import
 
-type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t = {
+type ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t = {
   path : Path.t;
   opcode_builder : ('reg, 'opcode, 'rel, 'out) Builder.t;
   dir_builder : ('reg, 'dir, 'rel, 'out) Builder.t;
   res_builder : ('reg, 'res, 'rel, 'out) Builder.t;
+  mutable toks : ('tok Token.t * Token_info.t) option Sequence.t;
 }
 [@@deriving fields]
 
@@ -22,8 +23,24 @@ let add_string _st bldr str = Builder.add_string bldr str
 let add_base_offset _st bldr base off = Builder.add_base_offset bldr base off
 let build _st bldr = Builder.build bldr
 
+let next st =
+  let open Token_info in
+  match Sequence.next st.toks with
+  | None ->
+      Some
+        ( Token.Eof,
+          (* TODO: I wish we had Rust's Default trait. :) *)
+          {
+            starts = Location.create 1 1;
+            ends = Location.create 1 1;
+            string = (fun () -> "");
+          } )
+  | Some (next, tail) ->
+      st.toks <- tail;
+      next
+
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
-    ~build_instruction ~build_directive ~build_reserved =
+    ~build_instruction ~build_directive ~build_reserved toks =
   {
     path;
     opcode_builder =
@@ -32,4 +49,5 @@ let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
       Builder.create reg_m dir_m ~word_size ~builder_fn:build_directive;
     res_builder =
       Builder.create reg_m res_m ~word_size ~builder_fn:build_reserved;
+    toks;
   }
