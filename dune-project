@@ -27,6 +27,7 @@
   ocamlformat
   ppx_deriving
   ppx_compare
+  ppx_let
   ppx_fields_conv
   ppx_deriving_hash
   ppx_sexp_conv)

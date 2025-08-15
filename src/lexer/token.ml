@@ -46,6 +46,9 @@ type 'a t =
   | Isa_specific of 'a
 [@@deriving eq]
 
+let is_eof = function Eof -> true | _ -> false
+let is_whitespace = function White_space -> true | _ -> false
+
 module MkToken (Isa_specific : sig
   type t
 

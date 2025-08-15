@@ -1,6 +1,6 @@
 open! Import
 
-type ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t
+type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 
 val create :
   ?path:Path.t ->
@@ -12,51 +12,65 @@ val create :
   build_instruction:('reg, 'opcode, 'rel, 'out) Builder.Builder_fn.t ->
   build_directive:('reg, 'dir, 'rel, 'out) Builder.Builder_fn.t ->
   build_reserved:('reg, 'res, 'rel, 'out) Builder.Builder_fn.t ->
-  ('tok Token.t * Lexer.Token_info.t) option Sequence.t ->
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t
+  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
+  Sequence.t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 
 val with_opcode_builder :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   'opcode ->
   (('reg, 'opcode, 'rel, 'out) Builder.t -> 'a) ->
   'a
 
 val with_dir_builder :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   'dir ->
   (('reg, 'dir, 'rel, 'out) Builder.t -> 'a) ->
   'a
 
 val add_register :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'comm, 'rel, 'out) Builder.t ->
   'reg ->
   unit
 
 val add_rel :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'comm, 'rel, 'out) Builder.t ->
   'rel Relocatable.t ->
   unit
 
 val add_string :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'comm, 'rel, 'out) Builder.t ->
   string ->
   unit
 
 val add_base_offset :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'comm, 'rel, 'out) Builder.t ->
   'reg ->
   'rel Relocatable.t ->
   unit
 
 val build :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'comm, 'rel, 'out) Builder.t ->
   'out
 
 val next :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out, 'tok) t ->
-  ('tok Token.t * Lexer.Token_info.t) option
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
+
+val next_non_whitespace :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
+
+val processed_label : ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t -> unit
+
+val choose_entry_point :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
+  pre_label:('a -> 'b) ->
+  post_label:('a -> 'b) ->
+  'a ->
+  'b

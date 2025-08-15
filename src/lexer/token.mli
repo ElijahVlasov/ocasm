@@ -46,6 +46,9 @@ type 'a t =
   | Isa_specific of 'a
 [@@deriving eq]
 
+val is_eof : 'a t -> bool
+val is_whitespace : 'a t -> bool
+
 module MkToken (Isa_specific : sig
   type t
 
