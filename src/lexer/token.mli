@@ -32,16 +32,12 @@ type 'a t =
   | LCurly
   | LSquare
   | Name of string
-  | Opcode of string
-  | Operand of string
   | String_literal of string
   | Percent
   | RBracket
   | RCurly
   | RSquare
   | Symbol of string
-  | Symbol_or_directive of (string * string)
-  | Symbol_or_opcode of (string * string)
   | White_space
   | Isa_specific of 'a
 [@@deriving eq]

@@ -32,16 +32,12 @@ type 'a t =
   | LCurly
   | LSquare
   | Name of string
-  | Opcode of string
-  | Operand of string
   | String_literal of string
   | Percent
   | RBracket
   | RCurly
   | RSquare
   | Symbol of string
-  | Symbol_or_directive of (string * string)
-  | Symbol_or_opcode of (string * string)
   | White_space
   | Isa_specific of 'a
 [@@deriving eq]
@@ -91,16 +87,12 @@ end = struct
     | LCurly -> "{"
     | LSquare -> "["
     | Name name -> name
-    | Opcode x -> x
-    | Operand x -> x
     | String_literal x -> Printf.sprintf "%S" x
     | Percent -> "%"
     | RBracket -> ")"
     | RCurly -> "}"
     | RSquare -> "]"
     | Symbol x -> x
-    | Symbol_or_directive (x, _) -> x
-    | Symbol_or_opcode (x, _) -> x
     | White_space -> " "
     | Isa_specific t -> Isa_specific.to_string t
 

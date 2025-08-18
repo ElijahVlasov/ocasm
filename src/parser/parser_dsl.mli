@@ -62,15 +62,8 @@ val next :
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
 
+val roll_back : ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t -> unit
+
 val next_non_whitespace :
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
-
-val processed_label : ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t -> unit
-
-val choose_entry_point :
-  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
-  pre_label:('a -> 'b) ->
-  post_label:('a -> 'b) ->
-  'a ->
-  'b

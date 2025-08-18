@@ -5,11 +5,7 @@ type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t = {
   opcode_builder : ('reg, 'opcode, 'rel, 'out) Builder.t;
   dir_builder : ('reg, 'dir, 'rel, 'out) Builder.t;
   res_builder : ('reg, 'res, 'rel, 'out) Builder.t;
-  mutable toks :
-    (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t)
-    option
-    Sequence.t;
-  mutable post_label : bool;
+  token_reader : ('reg, 'dir, 'opcode, 'res) Isa.Token.t Token_reader.t;
 }
 [@@deriving fields]
 
@@ -26,28 +22,8 @@ let add_rel _st bldr rel = Builder.add_rel bldr rel
 let add_string _st bldr str = Builder.add_string bldr str
 let add_base_offset _st bldr base off = Builder.add_base_offset bldr base off
 let build _st bldr = Builder.build bldr
-let reset st = st.post_label <- false
-
-let next st =
-  let open Token in
-  let open Token_info in
-  match Sequence.next st.toks with
-  | None ->
-      Some
-        ( Token.Eof,
-          (* TODO: I wish we had Rust's Default trait. :) *)
-          {
-            starts = Location.create 1 1;
-            ends = Location.create 1 1;
-            string = (fun () -> "");
-          } )
-  | Some ((Some (Eol, _) as next), tail) ->
-      reset st;
-      st.toks <- tail;
-      next
-  | Some (next, tail) ->
-      st.toks <- tail;
-      next
+let next st = Token_reader.next st.token_reader
+let roll_back st = Token_reader.roll_back st.token_reader
 
 let rec next_non_whitespace st =
   let open Token in
@@ -55,11 +31,6 @@ let rec next_non_whitespace st =
   | None -> None
   | Some (White_space, _) -> next_non_whitespace st
   | Some tok_and_tok_info -> Some tok_and_tok_info
-
-let processed_label st = st.post_label <- true
-
-let choose_entry_point st ~pre_label ~post_label a =
-  if st.post_label then post_label a else pre_label a
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
     ~build_instruction ~build_directive ~build_reserved toks =
@@ -71,6 +42,5 @@ let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
       Builder.create reg_m dir_m ~word_size ~builder_fn:build_directive;
     res_builder =
       Builder.create reg_m res_m ~word_size ~builder_fn:build_reserved;
-    toks;
-    post_label = false;
+    token_reader = Token_reader.create toks;
   }
