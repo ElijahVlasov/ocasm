@@ -2,39 +2,54 @@ open! Import
 
 type token_info = Lexer.Token_info.t
 
+exception Lexer_error
+
 type 't t = {
   mutable toks : ('t Token.t * token_info) option Sequence.t;
-  mutable is_rolled_back : bool;
-  mutable cur_tok_and_info : ('t Token.t * token_info) option;
+  mutable peeked : ('t Token.t * token_info) option;
+  mutable cur_tok_info : token_info option;
 }
 
-let next st =
+let fetch_next st =
   let open Token in
   let open Token_info in
-  if st.is_rolled_back then (
-    st.is_rolled_back <- false;
-    st.cur_tok_and_info)
-  else
-    let tok_and_tok_info =
-      match Sequence.next st.toks with
-      | None ->
-          Some
-            ( Eof,
-              (* TODO: I wish we had Rust's Default trait. :) *)
-              {
-                starts = Location.create 1 1;
-                ends = Location.create 1 1;
-                string = (fun () -> "");
-              } )
-      | Some (next, tail) ->
-          st.toks <- tail;
-          next
-    in
-    st.cur_tok_and_info <- tok_and_tok_info;
-    tok_and_tok_info
+  match Sequence.next st.toks with
+  | None ->
+      ( Eof,
+        {
+          starts = Location.create 1 1;
+          ends = Location.create 1 1;
+          string = (fun () -> "");
+        } )
+  | Some (None, _) -> raise Lexer_error
+  | Some (Some next, tail) ->
+      st.toks <- tail;
+      next
 
-let roll_back st =
-  if st.is_rolled_back then failwith "Rolling back too many times";
-  st.is_rolled_back <- true
+let next st =
+  match st.peeked with
+  | None ->
+      let next, info = fetch_next st in
+      st.cur_tok_info <- Some info;
+      next
+  | Some (next, info) ->
+      st.cur_tok_info <- Some info;
+      next
 
-let create toks = { toks; is_rolled_back = false; cur_tok_and_info = None }
+let peek st =
+  match st.peeked with
+  | None ->
+      let next = fetch_next st in
+      st.peeked <- Some next;
+      fst next
+  | Some (next, info) -> next
+
+let last_token_info st =
+  Option.value_or_thunk
+    ~default:(fun () ->
+      Panic.unreachable
+        ~msg:"Cannot request the last token info if there's not been any reads"
+        ())
+    st.cur_tok_info
+
+let create toks = { toks; peeked = None; cur_tok_info = None }

@@ -1,5 +1,4 @@
 open! Import
-open Option.Let_syntax
 open Parser_dsl
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t = {
@@ -8,18 +7,16 @@ type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t = {
 }
 
 let label st name =
-  (match next_non_whitespace st.dsl with
-  | Some (Eol, _) -> ()
-  | _ -> roll_back st.dsl);
-  return @@ st.build_label name
+  (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());
+  st.build_label name
 
 let must_be_label st name =
   let open Token in
-  match%map next_non_whitespace st.dsl with
-  | Colon, _ -> label st name
+  match next_non_whitespace st.dsl with
+  | Colon -> label st name
   | _ -> failwith "Unexpected token"
 
-let parse_arg st bldr next next_info =
+let parse_arg st bldr next =
   let open Token in
   let open Isa.Token in
   (match next with
@@ -27,41 +24,46 @@ let parse_arg st bldr next next_info =
   | Name name -> Parser_dsl.add_rel st.dsl bldr (Relocatable.Name name)
   | Dec x -> failwith "lol"
   | _ -> failwith "Wrong token");
-  let%map next, _ = next_non_whitespace st.dsl in
+  let next = next_non_whitespace st.dsl in
   match next with
   | Comma -> false
   | Eol | Eof -> true
   | _ -> failwith "Wrong token"
 
-let rec parse_args st bldr next next_info =
-  let%bind is_finished = parse_arg st bldr next next_info in
-  if is_finished then return @@ build st.dsl bldr
+let rec parse_args st bldr next =
+  let is_finished = parse_arg st bldr next in
+  if is_finished then build st.dsl bldr
   else
-    let%bind next, next_info = next_non_whitespace st.dsl in
-    parse_args st bldr next next_info
+    let next = next_non_whitespace st.dsl in
+    parse_args st bldr next
 
-let must_be_opcode st opcode next next_info =
-  with_opcode_builder st.dsl opcode @@ fun bldr ->
-  parse_args st bldr next next_info
+let build_command st next with_builder =
+  with_builder @@ fun bldr -> parse_args st bldr next
 
-let may_be_opcode st opcode token_info =
-  let open Token in
+let maybe_command st with_builder =
   let open Token_info in
+  let token_info = last_token_info st.dsl in
   let name = token_info.string () in
-  let%map next, next_info = next_non_whitespace st.dsl in
+  let next = next_non_whitespace st.dsl in
   match next with
   | Colon -> label st name
-  | _ -> must_be_opcode st opcode next next_info
+  | _ -> build_command st next with_builder
 
-let entry_point st (token, token_info) =
+let entry_point st token =
   let open Token in
   let open Isa.Token in
-  match token with
-  | Name name -> must_be_label st name
-  | Isa_specific (Opcode t) -> may_be_opcode st t token_info
-  | tok -> failwith "Unexpected token"
+  try
+    Option.some
+    @@
+    match token with
+    | Name name -> must_be_label st name
+    | Isa_specific (Opcode opcode) ->
+        maybe_command st (with_opcode_builder st.dsl opcode)
+    | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
+    | tok -> failwith "Unexpected token"
+  with Token_reader.Lexer_error -> None
 
-let next st = next_non_whitespace st.dsl >>= entry_point st
+let next st = next_non_whitespace st.dsl |> entry_point st
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
     ~build_instruction ~build_directive ~build_reserved ~build_label toks =

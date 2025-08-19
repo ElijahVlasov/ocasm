@@ -44,6 +44,7 @@ type 'a t =
 
 let is_eof = function Eof -> true | _ -> false
 let is_whitespace = function White_space -> true | _ -> false
+let is_eol = function Eol -> true | _ -> false
 
 module MkToken (Isa_specific : sig
   type t

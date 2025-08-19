@@ -44,6 +44,7 @@ type 'a t =
 
 val is_eof : 'a t -> bool
 val is_whitespace : 'a t -> bool
+val is_eol : 'a t -> bool
 
 module MkToken (Isa_specific : sig
   type t
@@ -57,5 +58,4 @@ end) : sig
   include Equal.S with type t := t
 end
 
-val is_eof : 'a t -> bool
 val of_special_symbol : char -> 'a t option
