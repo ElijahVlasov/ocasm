@@ -12,6 +12,7 @@ module OF_ISA (I : Isa.S) = struct
     Isa.Token.equal I.Register.equal I.Directive.equal I.Opcode.equal
       I.Reserved.equal
 
+  let pp = Isa.Token.pp I.Register.pp I.Directive.pp I.Opcode.pp I.Reserved.pp
   let dir x = Dir x
   let reg x = Reg x
   let opcode x = Opcode x

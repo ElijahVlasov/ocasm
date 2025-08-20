@@ -1,7 +1,4 @@
-open Alcotest
-open Base
-open Ocasm_lexer
-open Ocasm_utils
+open! Import
 
 let short_file = "assets/input/short_file.txt"
 let long_file_1 = "assets/input/long_file_1.txt"

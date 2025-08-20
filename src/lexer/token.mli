@@ -40,7 +40,7 @@ type 'a t =
   | Symbol of string
   | White_space
   | Isa_specific of 'a
-[@@deriving eq]
+[@@deriving eq, show]
 
 val is_eof : 'a t -> bool
 val is_whitespace : 'a t -> bool
@@ -51,11 +51,13 @@ module MkToken (Isa_specific : sig
 
   include To_string.S with type t := t
   include Equal.S with type t := t
+  include Pretty_printer.S with type t := t
 end) : sig
   type t := Isa_specific.t t
 
   include To_string.S with type t := t
   include Equal.S with type t := t
+  include Pretty_printer.S with type t := t
 end
 
 val of_special_symbol : char -> 'a t option

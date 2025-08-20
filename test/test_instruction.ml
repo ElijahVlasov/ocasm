@@ -1,10 +1,11 @@
+open! Import
 open Rv32.Instruction
 open Rv32.Register
 open Rv32.Fence_type
 open Rv32.Immediate
 
 let raw_instruction_fmt fmt raw_instruction =
-  Format.fprintf fmt "%s" (RawInstruction.to_string raw_instruction)
+  Stdlib.Format.fprintf fmt "%s" (RawInstruction.to_string raw_instruction)
 
 let raw_instruction = Alcotest.testable raw_instruction_fmt RawInstruction.eq_t
 
@@ -24,14 +25,15 @@ let test_addi_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "addi x1, x2, 3"
     (RawInstruction.of_int 0x00310093l)
-    (RawInstruction.add x1 x2 (Imm (Option.get (Immediate12.of_int32 3l))))
+    (RawInstruction.add x1 x2
+       (Imm (Option.value_exn (Immediate12.of_int32 3l))))
 
 let test_addi_x0_x0_imm_neg () =
   Alcotest.(check raw_instruction)
     "addi x0, x0, -42"
     (RawInstruction.of_int 0xfd600013l)
     (RawInstruction.add x0 x0
-       (Imm (Option.get (Immediate12.of_int32 (Int32.neg 42l)))))
+       (Imm (Option.value_exn (Immediate12.of_int32 (Int32.neg 42l)))))
 
 let test_sub_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
@@ -91,146 +93,148 @@ let test_lui_x1_1 () =
   Alcotest.(check raw_instruction)
     "lui x1, 1"
     (RawInstruction.of_int 0x000010b7l)
-    (RawInstruction.lui x1 (Option.get (Immediate20.of_int32 1l)))
+    (RawInstruction.lui x1 (Option.value_exn (Immediate20.of_int32 1l)))
 
 let test_lui_x0_imm_neg () =
   Alcotest.(check raw_instruction)
     "lui x0, -42"
     (RawInstruction.of_int 0xfffd6037l)
-    (RawInstruction.lui x0 (Option.get (Immediate20.of_int32 (Int32.neg 42l))))
+    (RawInstruction.lui x0
+       (Option.value_exn (Immediate20.of_int32 (Int32.neg 42l))))
 
 let test_auipc_x1_1 () =
   Alcotest.(check raw_instruction)
     "auipc x1, 1"
     (RawInstruction.of_int 0x00001097l)
-    (RawInstruction.auipc x1 (Option.get (Immediate20.of_int32 1l)))
+    (RawInstruction.auipc x1 (Option.value_exn (Immediate20.of_int32 1l)))
 
 let test_auipc_x0_imm_neg () =
   Alcotest.(check raw_instruction)
     "auipc x0, -42"
     (RawInstruction.of_int 0xfffd6017l)
     (RawInstruction.auipc x0
-       (Option.get (Immediate20.of_int32 (Int32.neg 42l))))
+       (Option.value_exn (Immediate20.of_int32 (Int32.neg 42l))))
 
 let test_lb_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "lb x1, 1(x2)"
     (RawInstruction.of_int 0x00110083l)
-    (RawInstruction.lb x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.lb x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_lh_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "lh x1, 1(x2)"
     (RawInstruction.of_int 0x00111083l)
-    (RawInstruction.lh x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.lh x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_lw_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "lw x1, 1(x2)"
     (RawInstruction.of_int 0x00112083l)
-    (RawInstruction.lw x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.lw x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_lbu_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "lbu x1, 1(x2)"
     (RawInstruction.of_int 0x00114083l)
-    (RawInstruction.lbu x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.lbu x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_lhu_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "lhu x1, 1(x2)"
     (RawInstruction.of_int 0x00115083l)
-    (RawInstruction.lhu x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.lhu x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_sb_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "sb x1, 1(x2)"
     (RawInstruction.of_int 0x001100a3l)
-    (RawInstruction.sb x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.sb x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_sh_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "sh x1, 1(x2)"
     (RawInstruction.of_int 0x001110a3l)
-    (RawInstruction.sh x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.sh x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_sw_x1_1_x1 () =
   Alcotest.(check raw_instruction)
     "sw x1, 1(x1)"
     (RawInstruction.of_int 0x0010a0a3l)
-    (RawInstruction.sw x1 (Option.get (Immediate12.of_int32 1l)) x1)
+    (RawInstruction.sw x1 (Option.value_exn (Immediate12.of_int32 1l)) x1)
 
 let test_sw_x1_1_x2 () =
   Alcotest.(check raw_instruction)
     "sw x1, 1(x2)"
     (RawInstruction.of_int 0x001120a3l)
-    (RawInstruction.sw x1 (Option.get (Immediate12.of_int32 1l)) x2)
+    (RawInstruction.sw x1 (Option.value_exn (Immediate12.of_int32 1l)) x2)
 
 let test_sw_x1_222222_x2 () =
   Alcotest.(check raw_instruction)
     "sw x1, 222(x2)"
     (RawInstruction.of_int 0x0c112f23l)
-    (RawInstruction.sw x1 (Option.get (Immediate12.of_int32 222l)) x2)
+    (RawInstruction.sw x1 (Option.value_exn (Immediate12.of_int32 222l)) x2)
 
 let test_beq_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "beq x1, x2, x3"
     (RawInstruction.of_int 0x00208163l)
-    (RawInstruction.beq x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.beq x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_bne_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "bne x1, x2, x3"
     (RawInstruction.of_int 0x00209163l)
-    (RawInstruction.bne x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.bne x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_blt_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "blt x1, x2, x3"
     (RawInstruction.of_int 0x0020c163l)
-    (RawInstruction.blt x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.blt x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_bltu_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "bltu x1, x2, x3"
     (RawInstruction.of_int 0x0020e163l)
-    (RawInstruction.bltu x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.bltu x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_bge_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "bge x1, x2, x3"
     (RawInstruction.of_int 0x0020d163l)
-    (RawInstruction.bge x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.bge x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_bgeu_x1_x2_x3 () =
   Alcotest.(check raw_instruction)
     "bgeu x1, x2, x3"
     (RawInstruction.of_int 0x0020f163l)
-    (RawInstruction.bgeu x1 x2 (Option.get (Immediate12.of_int32 3l)))
+    (RawInstruction.bgeu x1 x2 (Option.value_exn (Immediate12.of_int32 3l)))
 
 let test_jal_x1_1 () =
   Alcotest.(check raw_instruction)
     "jal x1, 1"
     (RawInstruction.of_int 0x000000efl)
-    (RawInstruction.jal x1 (Option.get (Immediate20.of_int32 1l)))
+    (RawInstruction.jal x1 (Option.value_exn (Immediate20.of_int32 1l)))
 
 let test_jal_x0_imm_neg () =
   Alcotest.(check raw_instruction)
     "jal x0, -42"
     (RawInstruction.of_int 0xfd7ff06fl)
-    (RawInstruction.jal x0 (Option.get (Immediate20.of_int32 (Int32.neg 42l))))
+    (RawInstruction.jal x0
+       (Option.value_exn (Immediate20.of_int32 (Int32.neg 42l))))
 
 let test_jal_x1_2 () =
   Alcotest.(check raw_instruction)
     "jal x1, 2"
     (RawInstruction.of_int 0x002000efl)
-    (RawInstruction.jal x1 (Option.get (Immediate20.of_int32 2l)))
+    (RawInstruction.jal x1 (Option.value_exn (Immediate20.of_int32 2l)))
 
 let test_jalr_x1_x2_1 () =
   Alcotest.(check raw_instruction)
     "jalr x1, 1(x2)"
     (RawInstruction.of_int 0x001100e7l)
-    (RawInstruction.jalr x1 x2 (Option.get (Immediate12.of_int32 1l)))
+    (RawInstruction.jalr x1 x2 (Option.value_exn (Immediate12.of_int32 1l)))
 
 let test_ecall () =
   Alcotest.(check raw_instruction)

@@ -19,6 +19,7 @@ module Token_info : sig
 
   include Equal.S with type t := t
   include To_string.S with type t := t
+  include Pretty_printer.S with type t := t
 end
 
 val create :

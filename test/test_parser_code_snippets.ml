@@ -1,18 +1,18 @@
-open Alcotest
+open! Import
 open Rv32.Parser_error
 open Rv32.Parser_frontend
 open Rv32.Instruction
 open Rv32.Register
 
 let structured_instruction_fmt fmt instr =
-  Format.fprintf fmt "%s" (show_structured_instruction instr)
+  Stdlib.Format.fprintf fmt "%s" (show_structured_instruction instr)
 
 let structured_instruction =
   Alcotest.testable structured_instruction_fmt equal_structured_instruction
 
 let parser_error =
   Alcotest.testable
-    (fun fmt err -> Format.fprintf fmt "%s" (show_parser_error err))
+    (fun fmt err -> Stdlib.Format.fprintf fmt "%s" (show_parser_error err))
     equal_parser_error
 
 let parser_result = Alcotest.result (list structured_instruction) parser_error

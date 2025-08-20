@@ -1,3 +1,4 @@
+open! Import
 open Rv32.Fence_type
 
 let fence_type = Alcotest.testable pp_fence_type equal_fence_type

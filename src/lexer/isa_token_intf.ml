@@ -16,6 +16,7 @@ module type S = sig
 
   include To_string.S with type t := t
   include Equal.S with type t := t
+  include Pretty_printer.S with type t := t
 end
 
 type 'a t = (module S with type t = 'a)

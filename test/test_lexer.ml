@@ -1,43 +1,10 @@
-open Base
-open Ocasm_core
-open Ocasm_lexer
-open Ocasm_utils
-
-module Mock_token = Token.MkToken (struct
-  type t = unit
-
-  let to_string _ = ""
-  let equal _ _ = true
-end)
-
-let token_fmt fmt token =
-  Stdlib.Format.fprintf fmt "'%s'" (Mock_token.to_string token)
-
-module MockT : Isa_token.S with type t = unit = struct
-  type t = unit
-
-  let directive _ = None
-  let name _ = None
-  let reserved _ = None
-  let to_string _ = ""
-  let equal _ _ = true
-end
-
-let token = Alcotest.testable token_fmt Mock_token.equal
-
-let token_info_fmt fmt info =
-  Stdlib.Format.fprintf fmt "%s" (Token_info.to_string info)
-
-let token_info = Alcotest.testable token_info_fmt Token_info.equal
-
-let diagnostic_message =
-  Alcotest.testable Diagnostic_message.Dyn.pp Diagnostic_message.Dyn.equal
+open! Import
 
 module Private = struct
   let create_lexer inp_m inp =
     let open Diagnostics_handler in
     Ocasm_lexer.create
-      (module MockT)
+      (module Mock_token)
       inp_m inp
       (module Kitchen_sink_handler)
       (Kitchen_sink_handler.create ())
@@ -45,10 +12,10 @@ module Private = struct
   module Single_token_test : sig
     type t
 
-    val mk : string -> string -> MockT.t Token.t -> t
+    val mk : string -> string -> Mock_token.t Token.t -> t
     val to_test_case : t -> unit Alcotest.test_case
   end = struct
-    type t = string * string * MockT.t Token.t
+    type t = string * string * Mock_token.t Token.t
 
     let mk name content expected = (name, content, expected)
 
@@ -61,7 +28,9 @@ module Private = struct
         ~f:(fun inp ->
           let lexer = create_lexer (module I) inp in
           let got = Ocasm_lexer.next_token lexer |> Option.value_exn |> fst in
-          Alcotest.check token "Tokens don't coincide" expected got)
+          Alcotest.check
+            (Testable.token Testable.mock_token)
+            "Tokens don't coincide" expected got)
 
     let to_test_case (name, content, expected) =
       Alcotest.test_case name `Quick @@ run content expected
@@ -70,10 +39,10 @@ module Private = struct
   module Multiple_token_test : sig
     type t
 
-    val mk : string -> string -> (MockT.t Token.t * Token_info.t) list -> t
+    val mk : string -> string -> (Mock_token.t Token.t * Token_info.t) list -> t
     val to_test_case : t -> unit Alcotest.test_case
   end = struct
-    type t = string * string * (MockT.t Token.t * Token_info.t) list
+    type t = string * string * (Mock_token.t Token.t * Token_info.t) list
 
     let mk name content expected = (name, content, expected)
 
@@ -88,7 +57,9 @@ module Private = struct
           Ocasm_lexer.to_list lexer |> Option.value_exn |> List.zip_exn expected
           |> List.iter ~f:(fun (expected, got) ->
                  Alcotest.check
-                   (Alcotest.pair token token_info)
+                   (Alcotest.pair
+                      (Testable.token Testable.mock_token)
+                      Testable.token_info)
                    "Tokens don't coincide" expected got))
 
     let to_test_case (name, content, expected) =
@@ -116,7 +87,7 @@ module Private = struct
           let handler = Kitchen_sink_handler.create () in
           let lexer =
             Ocasm_lexer.create
-              (module MockT)
+              (module Mock_token)
               (module I)
               inp
               (module Kitchen_sink_handler)
@@ -126,8 +97,8 @@ module Private = struct
           List.iter
             (Kitchen_sink_handler.to_list handler |> List.zip_exn expected)
             ~f:(fun (expected, got) ->
-              Alcotest.check diagnostic_message "Tokens don't coincide" expected
-                got))
+              Alcotest.check Testable.diagnostic_message "Tokens don't coincide"
+                expected got))
 
     let to_test_case (name, content, expected) =
       Alcotest.test_case name `Quick @@ run content expected

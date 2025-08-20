@@ -1,4 +1,4 @@
-open Alcotest
+open! Import
 open Rv32.Parser_error
 open Rv32.Parser_frontend
 open Rv32.Instruction
@@ -6,14 +6,14 @@ open Rv32.Register
 open Rv32.Immediate
 
 let structured_instruction_fmt fmt instr =
-  Format.fprintf fmt "%s" (show_structured_instruction instr)
+  Stdlib.Format.fprintf fmt "%s" (show_structured_instruction instr)
 
 let structured_instruction =
   Alcotest.testable structured_instruction_fmt equal_structured_instruction
 
 let parser_error =
   Alcotest.testable
-    (fun fmt err -> Format.fprintf fmt "%s" (show_parser_error err))
+    (fun fmt err -> Stdlib.Format.fprintf fmt "%s" (show_parser_error err))
     equal_parser_error
 
 let parser_result = Alcotest.result (list structured_instruction) parser_error
@@ -25,7 +25,7 @@ let test_empty_program () =
 let test_add_imm () =
   let program = "add x2, x1, 5" in
   let expected =
-    [ Add (x2, x1, Imm (Immediate12.of_int32 5l |> Option.get)) ]
+    [ Add (x2, x1, Imm (Immediate12.of_int32 5l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "add immediate" (Ok expected) result
@@ -92,7 +92,7 @@ let test_sltu () =
 let test_andi () =
   let program = "and x3, x2, 42" in
   let expected =
-    [ And (x3, x2, Imm (Immediate12.of_int32 42l |> Option.get)) ]
+    [ And (x3, x2, Imm (Immediate12.of_int32 42l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "And immediate" (Ok expected) result
@@ -100,7 +100,7 @@ let test_andi () =
 let test_ori () =
   let program = "or x3, x2, 42" in
   let expected =
-    [ Or (x3, x2, Imm (Immediate12.of_int32 42l |> Option.get)) ]
+    [ Or (x3, x2, Imm (Immediate12.of_int32 42l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "Or immediate" (Ok expected) result
@@ -108,7 +108,7 @@ let test_ori () =
 let test_xori () =
   let program = "xor x3, x2, 42" in
   let expected =
-    [ Xor (x3, x2, Imm (Immediate12.of_int32 42l |> Option.get)) ]
+    [ Xor (x3, x2, Imm (Immediate12.of_int32 42l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "Xor immediate" (Ok expected) result
@@ -116,7 +116,7 @@ let test_xori () =
 let test_slti () =
   let program = "slt x3, x2, 42" in
   let expected =
-    [ Slt (x3, x2, Imm (Immediate12.of_int32 42l |> Option.get)) ]
+    [ Slt (x3, x2, Imm (Immediate12.of_int32 42l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "Slt immediate" (Ok expected) result
@@ -124,7 +124,7 @@ let test_slti () =
 let test_sltui () =
   let program = "sltu x3, x2, 42" in
   let expected =
-    [ Sltu (x3, x2, Imm (Immediate12.of_int32 42l |> Option.get)) ]
+    [ Sltu (x3, x2, Imm (Immediate12.of_int32 42l |> Option.value_exn)) ]
   in
   let result = parse_program program in
   check parser_result "Sltu immediate" (Ok expected) result
@@ -137,109 +137,139 @@ let test_invalid_immediate () =
 
 let test_beq () =
   let program = "beq x2, x1, 42" in
-  let expected = [ Beq (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Beq (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Beq" (Ok expected) result
 
 let test_bne () =
   let program = "bne x2, x1, 42" in
-  let expected = [ Bne (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Bne (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Bne" (Ok expected) result
 
 let test_blt () =
   let program = "blt x2, x1, 42" in
-  let expected = [ Blt (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Blt (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Blt" (Ok expected) result
 
 let test_bge () =
   let program = "bge x2, x1, 42" in
-  let expected = [ Bge (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Bge (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Bge" (Ok expected) result
 
 let test_bltu () =
   let program = "bltu x2, x1, 42" in
-  let expected = [ Bltu (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Bltu (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Bltu" (Ok expected) result
 
 let test_bgeu () =
   let program = "bgeu x2, x1, 42" in
-  let expected = [ Bgeu (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Bgeu (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Bgeu" (Ok expected) result
 
 let test_lb () =
   let program = "lb x2, x1, 42" in
-  let expected = [ Lb (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Lb (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Lb" (Ok expected) result
 
 let test_lh () =
   let program = "lh x2, x1, 42" in
-  let expected = [ Lh (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Lh (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Lh" (Ok expected) result
 
 let test_lw () =
   let program = "lw x2, x1, 42" in
-  let expected = [ Lw (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Lw (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Lw" (Ok expected) result
 
 let test_lbu () =
   let program = "lbu x2, x1, 42" in
-  let expected = [ Lbu (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Lbu (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Lbu" (Ok expected) result
 
 let test_lhu () =
   let program = "lhu x2, x1, 42" in
-  let expected = [ Lhu (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Lhu (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Lhu" (Ok expected) result
 
 let test_sb () =
   let program = "sb x2, x1, 42" in
-  let expected = [ Sb (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Sb (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Sb" (Ok expected) result
 
 let test_sh () =
   let program = "sh x2, x1, 42" in
-  let expected = [ Sh (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Sh (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Sh" (Ok expected) result
 
 let test_sw () =
   let program = "sw x2, x1, 42" in
-  let expected = [ Sw (x2, x1, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Sw (x2, x1, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Sw" (Ok expected) result
 
 let test_jal () =
   let program = "jal x1, 42" in
-  let expected = [ Jal (x1, Immediate20.of_int32 42l |> Option.get) ] in
+  let expected = [ Jal (x1, Immediate20.of_int32 42l |> Option.value_exn) ] in
   let result = parse_program program in
   check parser_result "Jal" (Ok expected) result
 
 let test_jalr () =
   let program = "jalr x1, x2, 42" in
-  let expected = [ Jalr (x1, x2, Immediate12.of_int32 42l |> Option.get) ] in
+  let expected =
+    [ Jalr (x1, x2, Immediate12.of_int32 42l |> Option.value_exn) ]
+  in
   let result = parse_program program in
   check parser_result "Jalr" (Ok expected) result
 
 let test_lui () =
   let program = "lui x1, 42" in
-  let expected = [ Lui (x1, Immediate20.of_int32 42l |> Option.get) ] in
+  let expected = [ Lui (x1, Immediate20.of_int32 42l |> Option.value_exn) ] in
   let result = parse_program program in
   check parser_result "Lui" (Ok expected) result
 
 let test_auipc () =
   let program = "auipc x1, 42" in
-  let expected = [ Auipc (x1, Immediate20.of_int32 42l |> Option.get) ] in
+  let expected = [ Auipc (x1, Immediate20.of_int32 42l |> Option.value_exn) ] in
   let result = parse_program program in
   check parser_result "Auipc" (Ok expected) result
 

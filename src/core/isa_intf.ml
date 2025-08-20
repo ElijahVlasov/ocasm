@@ -19,6 +19,7 @@ module Register = struct
 
     include Equal.S with type t := t
     include To_string.S with type t := t
+    include Pretty_printer.S with type t := t
 
     val of_string : string -> t option
     val bit_size : t -> int
@@ -33,6 +34,7 @@ module Expr = struct
 
     include Equal.S with type t := t
     include To_string.S with type t := t
+    include Pretty_printer.S with type t := t
 
     val of_string : string -> t option
     val arg_type : t -> Type.t list
@@ -47,7 +49,7 @@ module Token = struct
     | Dir of 'dir
     | Opcode of 'opcode
     | Res of 'res
-  [@@deriving eq]
+  [@@deriving eq, show]
 end
 
 module type S = sig

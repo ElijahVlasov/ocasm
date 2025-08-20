@@ -40,7 +40,7 @@ type 'a t =
   | Symbol of string
   | White_space
   | Isa_specific of 'a
-[@@deriving eq]
+[@@deriving eq, show]
 
 let is_eof = function Eof -> true | _ -> false
 let is_whitespace = function White_space -> true | _ -> false
@@ -51,11 +51,13 @@ module MkToken (Isa_specific : sig
 
   include To_string.S with type t := t
   include Equal.S with type t := t
+  include Pretty_printer.S with type t := t
 end) : sig
   type t := Isa_specific.t t
 
   include To_string.S with type t := t
   include Equal.S with type t := t
+  include Pretty_printer.S with type t := t
 end = struct
   let to_string = function
     | Colon -> ":"
@@ -98,6 +100,7 @@ end = struct
     | Isa_specific t -> Isa_specific.to_string t
 
   let equal x y = equal Isa_specific.equal x y
+  let pp = pp Isa_specific.pp
 end
 
 let is_eof = function Eof -> true | _ -> false
