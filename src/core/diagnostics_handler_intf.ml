@@ -1,4 +1,4 @@
-open Base
+open! Import
 
 exception Recoverable of (unit -> unit)
 exception Non_recoverable

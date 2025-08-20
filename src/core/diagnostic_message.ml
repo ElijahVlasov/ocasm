@@ -1,5 +1,4 @@
-open Base
-open Ocasm_utils
+open! Import
 include Diagnostic_message_intf
 
 module Diagnostic_type = struct

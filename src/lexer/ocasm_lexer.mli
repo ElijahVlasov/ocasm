@@ -9,19 +9,6 @@ type ('a, 'h, 't) t
     - ['h] is for diagnostics handler type.
     - ['t] is for ISA-specific token type. *)
 
-module Token_info : sig
-  type t = {
-    starts : Location.t;  (** Here the token starts *)
-    ends : Location.t;  (** Here the token ends *)
-    string : unit -> string;
-        (** The physical representation of the token in the source file. *)
-  }
-
-  include Equal.S with type t := t
-  include To_string.S with type t := t
-  include Pretty_printer.S with type t := t
-end
-
 val create :
   't Isa_token.t ->
   'a Input.t ->

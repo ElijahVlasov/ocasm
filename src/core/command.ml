@@ -1,3 +1,4 @@
+open! Import
 include Command_intf
 
 let instruction instr = Instruction instr

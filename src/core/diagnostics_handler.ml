@@ -1,4 +1,4 @@
-open Base
+open! Import
 include Diagnostics_handler_intf
 
 module Kitchen_sink_handler = struct

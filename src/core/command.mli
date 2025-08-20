@@ -1,3 +1,4 @@
+open! Import
 include module type of Command_intf
 
 val instruction : 'instr -> ('instr, 'dir) t

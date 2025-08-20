@@ -1,5 +1,4 @@
-open! Base
-open Ocasm_utils
+open! Import
 
 module Type = struct
   type t =

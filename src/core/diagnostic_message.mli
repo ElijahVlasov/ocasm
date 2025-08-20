@@ -1,4 +1,4 @@
-open Base
+open! Import
 include module type of Diagnostic_message_intf
 
 module Diagnostic_type : sig
