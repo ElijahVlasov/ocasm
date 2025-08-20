@@ -19,15 +19,7 @@ let test_first () =
       Isa_specific (Isa.Token.Reg Reg2);
       Eof;
     ]
-    |> List.map ~f:(fun tok ->
-           Option.some
-             ( tok,
-               let open Token_info in
-               {
-                 starts = Location.create 1 1;
-                 ends = Location.create 1 1;
-                 string = (fun () -> "");
-               } ))
+    |> List.map ~f:(fun tok -> Option.some (tok, Token_info.default ()))
     |> Sequence.of_list
   in
   let parser =

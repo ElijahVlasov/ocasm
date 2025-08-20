@@ -12,3 +12,12 @@ type t = {
 [@@deriving eq, show]
 
 let to_string = show
+
+let default_value =
+  {
+    starts = Location.default ();
+    ends = Location.default ();
+    string = (fun () -> "");
+  }
+
+let default () = default_value

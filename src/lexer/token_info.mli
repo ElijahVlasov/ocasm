@@ -7,6 +7,7 @@ type t = {
       (** The physical representation of the token in the source file. *)
 }
 
+include Default.S with type t := t
 include Equal.S with type t := t
 include To_string.S with type t := t
 include Pretty_printer.S with type t := t

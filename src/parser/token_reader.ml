@@ -12,15 +12,8 @@ type 't t = {
 
 let fetch_next st =
   let open Token in
-  let open Token_info in
   match Sequence.next st.toks with
-  | None ->
-      ( Eof,
-        {
-          starts = Location.create 1 1;
-          ends = Location.create 1 1;
-          string = (fun () -> "");
-        } )
+  | None -> (Eof, Token_info.default ())
   | Some (None, _) -> raise Lexer_error
   | Some (Some next, tail) ->
       st.toks <- tail;
