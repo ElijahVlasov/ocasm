@@ -1,4 +1,6 @@
 open! Import
+module Arg = Builder.Arg
+module Builder_fn = Builder.Builder_fn
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t
 

@@ -1,6 +1,8 @@
 open! Import
 
 module Private = struct
+  open Mock_isa
+
   let create_lexer inp_m inp =
     let open Diagnostics_handler in
     Ocasm_lexer.create

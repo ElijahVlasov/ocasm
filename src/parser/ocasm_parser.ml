@@ -1,5 +1,7 @@
 open! Import
 open Parser_dsl
+module Arg = Builder.Arg
+module Builder_fn = Builder.Builder_fn
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t = {
   dsl : ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) Parser_dsl.t;
@@ -23,7 +25,8 @@ let parse_arg st bldr next =
   | Isa_specific (Reg reg) -> Parser_dsl.add_register st.dsl bldr reg
   | Name name -> Parser_dsl.add_rel st.dsl bldr (Relocatable.Name name)
   | Dec x -> failwith "lol"
-  | _ -> failwith "Wrong token");
+  | White_space -> failwith "Whitespace"
+  | _ -> failwith "Wrong tok");
   let next = next_non_whitespace st.dsl in
   match next with
   | Comma -> false
