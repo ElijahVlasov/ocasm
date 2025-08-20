@@ -37,18 +37,15 @@ let test_first () =
       (module Mock_opcode)
       (module Mock_reserved)
       ~word_size:32
-      ~build_instruction:(fun opcode (args : (_, unit) Argument.t array) ->
-        Command.instruction
-        @@
+      ~build_instruction:(fun
+          opcode (args : (_, Mock_reserved.t) Argument.t array) ->
         let arg1 = Argument.unwrap_reg_exn (Array.unsafe_get args 0) in
         let arg2 = Argument.unwrap_reg_exn (Array.unsafe_get args 1) in
         let open Mock_opcode in
         match opcode with
         | Opcode1 -> Mock_instruction.Opcode1 (arg1, arg2)
-        | Opcode2 -> Mock_instruction.Opcode1 (arg1, arg2))
+        | Opcode2 -> Mock_instruction.Opcode2 (arg1, arg2))
       ~build_directive:(fun dir args ->
-        Command.directive
-        @@
         let arg1 =
           Argument.unwrap_string_literal_exn (Array.unsafe_get args 0)
         in
@@ -57,7 +54,7 @@ let test_first () =
         | Dir1 -> Mock_directive.Dir1 arg1
         | Dir2 -> Mock_directive.Dir2 arg1)
       ~build_reserved:(fun (_ : Mock_reserved.t) _ -> Panic.unreachable ())
-      ~build_label:Command.label input
+      input
   in
   Alcotest.check
     (Alcotest.option

@@ -3,14 +3,14 @@ open Parser_dsl
 module Argument = Argument
 module Builder_fn = Builder.Builder_fn
 
-type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t = {
-  dsl : ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) Parser_dsl.t;
-  build_label : string -> 'ast;
+type ('reg, 'dir, 'opcode, 'res, 'rel, 'instr, 'dir_ast) t = {
+  dsl :
+    ('reg, 'dir, 'opcode, 'res, 'rel, ('instr, 'dir_ast) Command.t) Parser_dsl.t;
 }
 
 let label st name =
   (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());
-  st.build_label name
+  Command.Label name
 
 let must_be_label st name =
   let open Token in
@@ -69,10 +69,13 @@ let entry_point st token =
 let next st = next_non_whitespace st.dsl |> entry_point st
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
-    ~build_instruction ~build_directive ~build_reserved ~build_label toks =
+    ~build_instruction ~build_directive ~build_reserved toks =
+  let build_instruction x arg =
+    Command.instruction @@ build_instruction x arg
+  in
+  let build_directive x arg = Command.directive @@ build_directive x arg in
   {
     dsl =
       create ~path reg_m dir_m opcode_m res_m ~word_size ~build_instruction
         ~build_directive ~build_reserved toks;
-    build_label;
   }

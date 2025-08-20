@@ -4,7 +4,7 @@ type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t = {
   path : Path.t;
   opcode_builder : ('reg, 'opcode, 'rel, 'out) Builder.t;
   dir_builder : ('reg, 'dir, 'rel, 'out) Builder.t;
-  res_builder : ('reg, 'res, 'rel, 'out) Builder.t;
+  res_builder : ('reg, 'res, 'rel, 'rel Relocatable.t) Builder.t;
   token_reader : ('reg, 'dir, 'opcode, 'res) Isa.Token.t Token_reader.t;
 }
 [@@deriving fields]
