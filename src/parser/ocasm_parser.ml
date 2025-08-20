@@ -1,6 +1,6 @@
 open! Import
 open Parser_dsl
-module Arg = Builder.Arg
+module Argument = Argument
 module Builder_fn = Builder.Builder_fn
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t = {

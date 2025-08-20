@@ -1,10 +1,10 @@
 open! Import
-module Arg = Builder.Arg
+module Argument = Argument
 module Builder_fn = Builder.Builder_fn
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t
 
-val next : ('reg, 'dir, 'opcode, 'res, 'rel, 'ast) t -> 'ast option
+val next : (_, _, _, _, _, 'ast) t -> 'ast option
 
 val create :
   ?path:Path.t ->

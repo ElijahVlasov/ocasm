@@ -9,6 +9,11 @@ let test_first () =
     [
       Isa_specific (Isa.Token.Opcode Opcode1);
       White_space;
+      White_space;
+      White_space;
+      White_space;
+      White_space;
+      White_space;
       Isa_specific (Isa.Token.Reg Reg1);
       Comma;
       Isa_specific (Isa.Token.Reg Reg2);
@@ -32,20 +37,11 @@ let test_first () =
       (module Mock_opcode)
       (module Mock_reserved)
       ~word_size:32
-      ~build_instruction:(fun opcode args ->
+      ~build_instruction:(fun opcode (args : (_, unit) Argument.t array) ->
         Command.instruction
         @@
-        let arg1 =
-          match Array.unsafe_get args 0 with
-          | Arg.Reg reg -> reg
-          | Arg.Rel (_ : unit Relocatable.t) -> Panic.unreachable ()
-          | _ -> Panic.unreachable ()
-        in
-        let arg2 =
-          match Array.unsafe_get args 1 with
-          | Arg.Reg reg -> reg
-          | _ -> Panic.unreachable ()
-        in
+        let arg1 = Argument.unwrap_reg_exn (Array.unsafe_get args 0) in
+        let arg2 = Argument.unwrap_reg_exn (Array.unsafe_get args 1) in
         let open Mock_opcode in
         match opcode with
         | Opcode1 -> Mock_instruction.Opcode1 (arg1, arg2)
@@ -54,9 +50,7 @@ let test_first () =
         Command.directive
         @@
         let arg1 =
-          match Array.unsafe_get args 0 with
-          | Arg.StringLiteral str -> str
-          | _ -> Panic.unreachable ()
+          Argument.unwrap_string_literal_exn (Array.unsafe_get args 0)
         in
         let open Mock_dir in
         match dir with

@@ -3,7 +3,7 @@ include Builder_intf
 
 type ('reg, 'comm, 'rel, 'a) t = {
   mutable comm : 'comm option;
-  args : ('reg, 'rel) Arg.t array;
+  args : ('reg, 'rel) Argument.t array;
   mutable ind : int;
   mutable ty : Isa.Type.t list;
   reg_m : 'reg Isa.Register.t;
@@ -14,7 +14,7 @@ type ('reg, 'comm, 'rel, 'a) t = {
 [@@deriving fields]
 
 let create ?(len = 3) reg_m comm_m ~word_size ~builder_fn =
-  let open Arg in
+  let open Argument in
   {
     comm = None;
     args = Array.create ~len Uninit;
@@ -39,7 +39,7 @@ let rel_bs st =
   | Reloc { bit_size; value; reloc_data } -> bit_size
 
 let validate_arg (type reg) st ty arg =
-  let open Arg in
+  let open Argument in
   let open Isa in
   let module R = (val st.reg_m : Isa.Register.S with type t = reg) in
   match (ty, arg) with
