@@ -1,3 +1,5 @@
+open Ocasm_utils
+
 exception WrongDigit of char
 
 module type S = sig
@@ -7,7 +9,7 @@ module type S = sig
   val create : unit -> t
   val clear : t -> unit
   val add_char : t -> char -> unit
-  val build : t -> int64 array
+  val build : t -> Big_integer.t
 end
 
 module Bin_builder : S

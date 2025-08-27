@@ -7,7 +7,7 @@ module Private = struct
     val add_char : t -> char -> unit
     val contents : t -> string
     val lc_contents : t -> string
-    val to_number : t -> int64 array
+    val to_number : t -> Big_integer.t
     val clear : t -> unit
   end
 

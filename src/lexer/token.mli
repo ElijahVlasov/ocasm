@@ -4,10 +4,10 @@ type 'a t =
   | Colon
   | Semicolon
   | Comma
-  | Bin of int64 array
-  | Oct of int64 array
-  | Dec of int64 array
-  | Hex of int64 array
+  | Bin of Big_integer.t
+  | Oct of Big_integer.t
+  | Dec of Big_integer.t
+  | Hex of Big_integer.t
   | Eof
   | Eol
   | ExclamaitionMark

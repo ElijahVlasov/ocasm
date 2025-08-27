@@ -4,10 +4,10 @@ type 'a t =
   | Colon
   | Semicolon
   | Comma
-  | Bin of int64 array
-  | Oct of int64 array
-  | Dec of int64 array
-  | Hex of int64 array
+  | Bin of Big_integer.t
+  | Oct of Big_integer.t
+  | Dec of Big_integer.t
+  | Hex of Big_integer.t
   | Eof
   | Eol
   | ExclamaitionMark
@@ -65,7 +65,7 @@ end = struct
     | Comma -> ","
     | Bin x | Oct x | Dec x | Hex x ->
         (* TODO : implement this *)
-        if Array.length x = 1 then Int64.to_string (Array.get x 0) else ""
+        x |> Big_integer.to_int64_exn |> Int64.to_string
     | Eof -> "EOF"
     | Eol -> "\\n"
     | ExclamaitionMark -> "!"

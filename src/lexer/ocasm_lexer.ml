@@ -83,8 +83,7 @@ let number_start st ch =
         Token.Oct (consume_number st Oct_builder.is_digit builder)
         |> return_info_thunk st (fun () -> Token_builder.contents builder)
     | ch when is_word_separator ch ->
-        Token.Dec (Array.create ~len:1 0L)
-        |> return_info_thunk st (fun () -> "0")
+        Token.Dec Big_integer.zero |> return_info_thunk st (fun () -> "0")
     | ch -> Lexer_state.error st.state @@ Wrong_char_in_number_literal ch
   else
     Lexer_state.with_number_builder st.state Dec @@ fun builder ->

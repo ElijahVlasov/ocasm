@@ -1,3 +1,5 @@
+open! Import
+
 type case_insensitive
 type case_sensitive
 type 'a number_builder
@@ -17,7 +19,7 @@ type 'a t
 val add_char : 'a t -> char -> unit
 val contents : 'a t -> string
 val lc_contents : case_insensitive t -> string
-val to_number : 'a number_builder t -> int64 array
+val to_number : 'a number_builder t -> Big_integer.t
 val with_builder : 'a t -> ('a t -> 'b) -> 'b
 val clear : 'a t -> unit
 val create_case_sensitive : Buffer.t -> case_sensitive t
