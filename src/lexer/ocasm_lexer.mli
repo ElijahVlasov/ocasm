@@ -18,14 +18,14 @@ val create :
   ('a, 'h, 't) t
 (** Create a lexer *)
 
-val next_token : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) option
+val next_token : (_, _, 't) t -> ('t Token.t * Token_info.t) option
 (** Returns the next token with its meta information or, if the lexer failed,
     return [None].*)
 
-val to_seq : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) option Sequence.t
+val to_seq : (_, _, 't) t -> ('t Token.t * Token_info.t) option Sequence.t
 (** Converts a lexer into a sequence obtained by repetitive application of
     [next_token]. *)
 
-val to_list : ('a, 'h, 't) t -> ('t Token.t * Token_info.t) list option
+val to_list : (_, _, 't) t -> ('t Token.t * Token_info.t) list option
 (** Converts a lexer into a list obtained by repetitive application of
     [next_token]. *)
