@@ -7,6 +7,14 @@ type ('reg, 'dir, 'opcode, 'res, 'rel, 'instr, 'dir_ast) t
 val next :
   (_, _, _, _, _, 'instr, 'dir_ast) t -> ('instr, 'dir_ast) Command.t option
 
+val to_seq :
+  (_, _, _, _, _, 'instr, 'dir_ast) t ->
+  ('instr, 'dir_ast) Command.t option Sequence.t
+
+val to_list :
+  (_, _, _, _, _, 'instr, 'dir_ast) t ->
+  ('instr, 'dir_ast) Command.t option list
+
 val create :
   ?path:Path.t ->
   'reg Isa.Register.t ->

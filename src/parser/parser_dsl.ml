@@ -22,7 +22,11 @@ let add_rel _st bldr rel = Builder.add_rel bldr rel
 let add_string _st bldr str = Builder.add_string bldr str
 let add_base_offset _st bldr base off = Builder.add_base_offset bldr base off
 let build _st bldr = Builder.build bldr
-let next st = Token_reader.next st.token_reader
+
+let next st =
+  let t = Token_reader.next st.token_reader in
+  t
+
 let peek st = Token_reader.peek st.token_reader
 
 let skip st =
@@ -43,11 +47,13 @@ let rec peek_non_whitespace st =
       peek_non_whitespace st
   | tok -> tok
 
-let skip_whitespaces_and_newlines st =
-  let tok = ref (next_non_whitespace st) in
-  while Token.is_eol !tok do
-    tok := next_non_whitespace st
-  done
+let rec skip_whitespaces_and_newlines st =
+  let open Token in
+  match peek st with
+  | White_space | Eol ->
+      skip st;
+      skip_whitespaces_and_newlines st
+  | _ -> ()
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
     ~build_instruction ~build_directive ~build_reserved toks =

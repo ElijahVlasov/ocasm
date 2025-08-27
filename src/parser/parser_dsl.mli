@@ -72,6 +72,9 @@ val next_non_whitespace :
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t
 
+val skip_whitespaces_and_newlines :
+  ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t -> unit
+
 val peek_non_whitespace :
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t ->
   ('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t

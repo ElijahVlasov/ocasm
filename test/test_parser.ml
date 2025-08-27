@@ -1,27 +1,28 @@
 open! Import
 
-let test_first () =
+let tokenize content =
   let open Mock_isa in
-  let open Mock_register in
-  let open Mock_opcode in
-  let open Token in
-  let input =
-    [
-      Isa_specific (Isa.Token.Opcode Opcode1);
-      White_space;
-      White_space;
-      White_space;
-      White_space;
-      White_space;
-      White_space;
-      Isa_specific (Isa.Token.Reg Reg1);
-      Comma;
-      Isa_specific (Isa.Token.Reg Reg2);
-      Eof;
-    ]
-    |> List.map ~f:(fun tok -> Option.some (tok, Token_info.default ()))
-    |> Sequence.of_list
-  in
+  let module I = Ocasm_lexer.Input.StringInput in
+  let input = I.create content in
+  Input.with_input
+    (module I)
+    input
+    ~f:(fun inp ->
+      let open Diagnostics_handler in
+      let handler = Kitchen_sink_handler.create () in
+      let lexer =
+        Ocasm_lexer.create
+          (module Mock_token)
+          (module I)
+          inp
+          (module Kitchen_sink_handler)
+          handler
+      in
+      Ocasm_lexer.to_seq lexer)
+
+let test_parser input expected () =
+  let open Mock_isa in
+  let input = tokenize input in
   let parser =
     Ocasm_parser.create
       (module Mock_register)
@@ -48,11 +49,40 @@ let test_first () =
       ~build_reserved:(fun (_ : Mock_reserved.t) _ -> Panic.unreachable ())
       input
   in
+  let got =
+    Ocasm_parser.to_list parser
+    |> List.map ~f:(Option.value_or_thunk ~default:(fun () -> failwith ""))
+  in
   Alcotest.check
-    (Alcotest.option
+    (Alcotest.list
     @@ Testable.command Testable.mock_instruction Testable.mock_directive)
-    "" (Ocasm_parser.next parser)
-    (Mock_instruction.Opcode1 (Mock_register.Reg1, Mock_register.Reg2)
-    |> Command.instruction |> Option.some)
+    "" got expected
 
-let suite = [ test_case "First" `Quick test_first ]
+let parser_test_case name code parsed =
+  test_case name `Quick (test_parser code parsed)
+
+let suite =
+  let open Command in
+  let open Mock_isa in
+  let open Mock_instruction in
+  let open Mock_register in
+  [
+    parser_test_case "One opcode" "opcode1 reg1, reg2"
+      [ instruction @@ Opcode1 (Reg1, Reg2) ];
+    parser_test_case "Two opcodes"
+      "    opcode1 reg2, reg1\n\n\n\t opcode2 reg2, reg2"
+      [
+        instruction @@ Opcode1 (Reg2, Reg1); instruction @@ Opcode2 (Reg2, Reg2);
+      ];
+    parser_test_case "Opcode, Label, Opcode, Label"
+      " opcode2 reg1,       reg2\n\
+       label1:\n\
+       \topcode1 reg2,\t\t\t\t\t\t reg2\n\
+       label2:"
+      [
+        instruction @@ Opcode2 (Reg1, Reg2);
+        label "label1";
+        instruction @@ Opcode1 (Reg2, Reg2);
+        label "label2";
+      ];
+  ]

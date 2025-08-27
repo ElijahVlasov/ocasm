@@ -18,20 +18,42 @@ let must_be_label st name =
   | Colon -> label st name
   | _ -> failwith "Unexpected token"
 
+let parse_register st =
+  let open Token in
+  let open Isa.Token in
+  match next_non_whitespace st.dsl with
+  | Isa_specific (Reg reg) -> reg
+  | _ -> failwith "Unexpected token"
+
+let maybe_offset st bldr off =
+  let open Token in
+  match peek_non_whitespace st.dsl with
+  | LBracket -> (
+      skip st.dsl;
+      let reg = parse_register st in
+      match next_non_whitespace st.dsl with
+      | RBracket -> Parser_dsl.add_base_offset st.dsl bldr reg off
+      | _ -> failwith "Expected a closing bracket ")
+  | _ -> Parser_dsl.add_rel st.dsl bldr off
+
 let parse_arg st bldr next =
   let open Token in
   let open Isa.Token in
   (match next with
   | Isa_specific (Reg reg) -> Parser_dsl.add_register st.dsl bldr reg
-  | Name name -> Parser_dsl.add_rel st.dsl bldr (Relocatable.Name name)
-  | Dec x -> failwith "lol"
-  | White_space -> failwith "Whitespace"
-  | _ -> failwith "Wrong tok");
+  | Name name -> Relocatable.Name name |> maybe_offset st bldr
+  | Dec x | Bin x | Hex x | Oct x ->
+      Relocatable.of_big_integer x |> maybe_offset st bldr
+  | String_literal str -> Parser_dsl.add_string st.dsl bldr str
+  | White_space -> Panic.unreachable ~msg:"Whitespace" ()
+  | t ->
+      failwith
+        (Stdlib.Format.sprintf "%a" (fun _ -> Token.show (fun _ _ -> ())) t));
   let next = next_non_whitespace st.dsl in
   match next with
   | Comma -> false
   | Eol | Eof -> true
-  | _ -> failwith "Wrong token"
+  | _ -> failwith "Wrong token at the end of an argument"
 
 let rec parse_args st bldr next =
   let is_finished = parse_arg st bldr next in
@@ -63,10 +85,13 @@ let entry_point st token =
     | Isa_specific (Opcode opcode) ->
         maybe_command st (with_opcode_builder st.dsl opcode)
     | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
+    | Eof -> Command.Eof
     | tok -> failwith "Unexpected token"
   with Token_reader.Lexer_error -> None
 
-let next st = next_non_whitespace st.dsl |> entry_point st
+let next st =
+  skip_whitespaces_and_newlines st.dsl;
+  next_non_whitespace st.dsl |> entry_point st
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
     ~build_instruction ~build_directive ~build_reserved toks =
@@ -79,3 +104,14 @@ let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
       create ~path reg_m dir_m opcode_m res_m ~word_size ~build_instruction
         ~build_directive ~build_reserved toks;
   }
+
+let to_seq st =
+  let open Sequence.Generator in
+  let rec consume_output () =
+    match next st with
+    | Some Eof -> return ()
+    | token -> yield token >>= consume_output
+  in
+  run @@ consume_output ()
+
+let to_list st = Sequence.to_list (to_seq st)

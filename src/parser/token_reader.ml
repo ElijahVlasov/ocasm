@@ -27,6 +27,7 @@ let next st =
       next
   | Some (next, info) ->
       st.cur_tok_info <- Some info;
+      st.peeked <- None;
       next
 
 let peek st =
