@@ -1,5 +1,5 @@
 (library
- (name ocasm_parser)
+ (name parser)
  (public_name ocasm_parser)
  (libraries base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils)
  (flags

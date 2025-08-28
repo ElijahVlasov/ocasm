@@ -2,7 +2,7 @@ open! Import
 
 let tokenize content =
   let open Mock_isa in
-  let module I = Ocasm_lexer.Input.StringInput in
+  let module I = Lexer.Input.StringInput in
   let input = I.create content in
   Input.with_input
     (module I)
@@ -11,20 +11,20 @@ let tokenize content =
       let open Diagnostics_handler in
       let handler = Kitchen_sink_handler.create () in
       let lexer =
-        Ocasm_lexer.create
+        Lexer.create
           (module Mock_token)
           (module I)
           inp
           (module Kitchen_sink_handler)
           handler
       in
-      Ocasm_lexer.to_seq lexer)
+      Lexer.to_seq lexer)
 
 let test_parser input expected () =
   let open Mock_isa in
   let input = tokenize input in
   let parser =
-    Ocasm_parser.create
+    Parser.create
       (module Mock_register)
       (module Mock_dir)
       (module Mock_opcode)
@@ -50,7 +50,7 @@ let test_parser input expected () =
       input
   in
   let got =
-    Ocasm_parser.to_list parser
+    Parser.to_list parser
     |> List.map ~f:(Option.value_or_thunk ~default:(fun () -> failwith ""))
   in
   Alcotest.check

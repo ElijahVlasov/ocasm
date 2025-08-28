@@ -1,5 +1,5 @@
 open Import
-include Ocasm_lexer_intf
+include Lexer_intf
 
 type ('a, 'h, 't) t = {
   isa_m : 't Isa_token.t;

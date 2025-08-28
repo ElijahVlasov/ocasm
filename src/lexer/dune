@@ -1,5 +1,5 @@
 (library
- (name ocasm_lexer)
+ (name lexer)
  (public_name ocasm_lexer)
  (libraries base ocasm_core ocasm_utils)
  (flags

@@ -1,5 +1,5 @@
 open Import
-include module type of Ocasm_lexer_intf
+include module type of Lexer_intf
 
 type ('a, 'h, 't) t
 (** The lexer type.
