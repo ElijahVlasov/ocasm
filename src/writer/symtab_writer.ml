@@ -2,7 +2,7 @@ open Base
 open Ocasm_bfd
 open Ocasm_bfd.Bfd
 open Ocasm_assembler
-open Ocasm_utils
+open Utils
 
 let ( let* ) = BfdMonad.( >>= )
 

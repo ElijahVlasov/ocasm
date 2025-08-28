@@ -1,4 +1,4 @@
-open Ocasm_utils
+open Utils
 
 exception WrongDigit of char
 

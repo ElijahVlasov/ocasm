@@ -1,5 +1,5 @@
 (library
- (name ocasm_core)
+ (name ocore)
  (public_name ocasm_core)
  (libraries base ocasm_utils)
  (flags

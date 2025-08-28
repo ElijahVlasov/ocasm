@@ -1,5 +1,5 @@
 (library
- (name ocasm_utils)
+ (name utils)
  (public_name ocasm_utils)
  (libraries base)
  (flags

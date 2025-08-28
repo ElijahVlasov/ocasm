@@ -1,6 +1,6 @@
 open Base
 open Ocasm_bfd
-open Ocasm_utils
+open Utils
 
 module type WORD_TYPE = sig
   type word

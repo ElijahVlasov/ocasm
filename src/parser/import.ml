@@ -1,7 +1,7 @@
 include struct
   include Base
-  include Ocasm_core
-  include Ocasm_utils
+  include Ocore
+  include Utils
   include Lexer
   module Isa_token = Lexer.Isa_token
   module Token = Lexer.Token

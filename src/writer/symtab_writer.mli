@@ -1,7 +1,7 @@
 open Base
 open Ocasm_bfd.Bfd
 open Ocasm_assembler
-open Ocasm_utils
+open Utils
 
 val set_symtab :
   'a Word_type.t ->

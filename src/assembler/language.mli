@@ -1,5 +1,5 @@
 open Base
-open Ocasm_utils
+open Utils
 
 module type A = sig
   type instruction

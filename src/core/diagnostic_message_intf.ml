@@ -1,5 +1,5 @@
 open Base
-open Ocasm_utils
+open Utils
 
 type 'a diagnostic_type =
   | Warning : unit diagnostic_type

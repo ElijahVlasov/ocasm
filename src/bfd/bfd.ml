@@ -1,7 +1,7 @@
 open Base
 open Base.Exn
 open Ctypes
-open Ocasm_utils
+open Utils
 
 let _ =
   let ( = ) = Unsigned.Size_t.equal in
