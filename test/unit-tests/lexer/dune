@@ -1,0 +1,6 @@
+(test
+ (name test_lexer)
+ (package ocasm_private)
+ (libraries alcotest base ocasm_core ocasm_lexer test_common)
+ (deps
+  (glob_files assets/input/*)))

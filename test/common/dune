@@ -1,19 +1,11 @@
-(test
- (name test)
+(library
+ (name test_common)
  (package ocasm_private)
  (libraries
   alcotest
   base
   ocasm_core
-  ctypes
-  rv32
-  ocasm_bfd
-  ocasm_lexer
-  ocasm_parser
-  test_common)
- (link_flags -cclib -L%{env:RISC_V_TOOLCHAIN=}/lib -cclib -lbfd)
- (deps
-  (glob_files assets/input/*))
+  ocasm_lexer)
  (preprocess
   (pps
    ppx_deriving.eq

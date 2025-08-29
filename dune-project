@@ -59,3 +59,7 @@
 (package
  (name ocasm_parser)
  (depends base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils))
+
+(package
+ (name ocasm_private)
+ (depends base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils))
