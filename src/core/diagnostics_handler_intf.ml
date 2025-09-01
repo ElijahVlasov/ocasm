@@ -6,8 +6,27 @@ exception Non_recoverable
 module type S = sig
   type t
 
-  val create : ?filter:int Hash_set.t -> ?promote:int Hash_set.t -> unit -> t
-  val throw : ?recovery:(unit -> unit) -> t -> 'a Diagnostic_message.t -> 'a
+  val create :
+    ?filter:(Diagnostics.Warning.t -> bool) ->
+    ?promote:(Diagnostics.Warning.t -> bool) ->
+    pp_err:(module Pretty_printer.S with type t = Diagnostics.Error.t) ->
+    pp_warn:(module Pretty_printer.S with type t = Diagnostics.Warning.t) ->
+    unit ->
+    t
+
+  val error :
+    ?recovery:(unit -> unit) ->
+    t ->
+    Diagnostics.Error.t ->
+    Diagnostics_context.t ->
+    'a
+
+  val warn :
+    ?recovery:(unit -> unit) ->
+    t ->
+    Diagnostics.Warning.t ->
+    Diagnostics_context.t ->
+    unit
 end
 
 module type Intf = sig
@@ -19,7 +38,7 @@ module type Intf = sig
   module Kitchen_sink_handler : sig
     include S
 
-    val to_list : t -> Diagnostic_message.dyn list
+    val to_list : t -> (Diagnostics.Any.t * Diagnostics_context.t) list
   end
 
   module Std_handler : S

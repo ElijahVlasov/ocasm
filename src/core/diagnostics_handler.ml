@@ -2,52 +2,58 @@ open! Import
 include Diagnostics_handler_intf
 
 module Kitchen_sink_handler = struct
-  open Diagnostic_message
+  type t = (Diagnostics.Any.t * Diagnostics_context.t) Queue.t
 
-  type t = Dyn.t Queue.t
+  let create ?filter ?promote ~pp_err ~pp_warn () = Queue.create ()
 
-  let create ?filter ?promote () = Queue.create ()
+  let error (type a) ?recovery h err context : a =
+    Queue.enqueue h (Diagnostics.Any.Error err, context);
+    raise
+    @@
+    match recovery with
+    | None -> Non_recoverable
+    | Some recovery -> Recoverable recovery
 
-  let throw (type a) ?recovery handler (msg : a Diagnostic_message.t) : a =
-    Queue.enqueue handler (Dyn msg);
-    let error () =
-      raise
-      @@
-      match recovery with
-      | None -> Non_recoverable
-      | Some recovery -> Recoverable recovery
-    in
-    match msg.typ with Warning -> () | Error -> error ()
+  let warn ?recovery h warning context =
+    Queue.enqueue h (Diagnostics.Any.Warning warning, context);
+    ()
 
-  let to_list handler = Queue.to_list handler
+  let to_list h = Queue.to_list h
 end
 
 module Std_handler = struct
-  type t = { filter : int Hash_set.t; promote : int Hash_set.t }
+  type t = {
+    filter : Diagnostics.Warning.t -> bool;
+    promote : Diagnostics.Warning.t -> bool;
+    pp_err : (module Pretty_printer.S with type t = Diagnostics.Error.t);
+    pp_warn : (module Pretty_printer.S with type t = Diagnostics.Warning.t);
+  }
 
-  let create ?filter ?promote () =
-    let filter =
-      Option.value_or_thunk filter ~default:(fun () ->
-          Hash_set.create (module Int))
-    in
-    let promote =
-      Option.value_or_thunk promote ~default:(fun () ->
-          Hash_set.create (module Int))
-    in
-    { filter; promote }
+  let create ?(filter = fun _ -> false) ?(promote = fun _ -> false) ~pp_err
+      ~pp_warn () =
+    { filter; promote; pp_err; pp_warn }
 
-  let throw (type a) ?recovery handler (msg : a Diagnostic_message.t) : a =
-    let error () =
-      raise
-      @@
-      match recovery with
-      | None -> Non_recoverable
-      | Some recovery -> Recoverable recovery
+  let print_message title pp msg context : unit = Panic.unimplemented ()
+
+  let error_aux recovery err pp context =
+    print_message "Error" pp err context;
+    raise
+    @@
+    match recovery with
+    | None -> Non_recoverable
+    | Some recovery -> Recoverable recovery
+
+  let error ?recovery h err context =
+    let module Pp =
+      (val h.pp_err : Pretty_printer.S with type t = Diagnostics.Error.t)
     in
-    match msg.typ with
-    | Warning ->
-        if not @@ Hash_set.mem handler.filter (String.hash msg.msg) then
-          if Hash_set.mem handler.promote (String.hash msg.msg) then error ()
-          else Diagnostic_message.pp Stdlib.Format.std_formatter msg
-    | Error -> error ()
+    error_aux recovery err Pp.pp context
+
+  let warn ?recovery h warn context =
+    let module Pp =
+      (val h.pp_warn : Pretty_printer.S with type t = Diagnostics.Warning.t)
+    in
+    if not @@ h.filter warn then
+      if h.promote warn then error_aux recovery warn Pp.pp context
+      else print_message "Warning" Pp.pp warn context
 end
