@@ -22,17 +22,6 @@ module Error = struct
         Printf.sprintf "unexpected character '%c' in a number literal" c
     | Junk_symbol c -> Printf.sprintf "junk symbol '%c'" c
 
-  (* TODO: these id assignments should be automatic or there must *)
-  (*       another mechanism for that. *)
-  let id = function
-    | Incorrect_escape_sequence _ -> 0
-    | Incorrect_hex_escape_sequence (_, _) -> 1
-    | Unfinished_comment -> 2
-    | Unfinished_string_literal -> 6
-    | Expected_vs_got (_, _) -> 3
-    | Wrong_char_in_number_literal _ -> 4
-    | Junk_symbol _ -> 5
-
   let to_diagnostic_message (type a) (err : a t) starts ends file ctx =
     match err with
     | Error err ->
@@ -40,7 +29,6 @@ module Error = struct
         {
           typ = Diagnostic_message.Error;
           msg = msg err;
-          id = id err;
           starts;
           ends;
           file;
@@ -54,8 +42,6 @@ module Warning = struct
   let msg = function
     | Newline_in_string_literal -> "newline character in a string literal"
 
-  let id = function Newline_in_string_literal -> 0
-
   let to_diagnostic_message (type a) (warn : a t) starts ends file ctx =
     match warn with
     | Warning warn ->
@@ -63,7 +49,6 @@ module Warning = struct
         {
           typ = Diagnostic_message.Error;
           msg = msg warn;
-          id = id warn;
           starts;
           ends;
           file;

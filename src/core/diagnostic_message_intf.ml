@@ -8,7 +8,6 @@ type 'a diagnostic_type =
 type 'a t = {
   typ : 'a diagnostic_type;
   msg : string;
-  id : int;
   starts : Location.t;
   ends : Location.t;
   file : Path.t;

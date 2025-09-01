@@ -46,8 +46,8 @@ module Std_handler = struct
     in
     match msg.typ with
     | Warning ->
-        if not @@ Hash_set.mem handler.filter msg.id then
-          if Hash_set.mem handler.promote msg.id then error ()
+        if not @@ Hash_set.mem handler.filter (String.hash msg.msg) then
+          if Hash_set.mem handler.promote (String.hash msg.msg) then error ()
           else Diagnostic_message.pp Stdlib.Format.std_formatter msg
     | Error -> error ()
 end

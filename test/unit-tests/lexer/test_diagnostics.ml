@@ -20,7 +20,6 @@ let suite =
           {
             typ = Error;
             msg = "unexpected character 'l' in a number literal";
-            id = 4;
             starts = Location.create 1 9;
             ends = Location.create 1 9;
             file = Path.of_string "";
@@ -30,7 +29,6 @@ let suite =
           {
             typ = Error;
             msg = "unexpected character 'z' in a number literal";
-            id = 4;
             starts = Location.create 2 2;
             ends = Location.create 2 2;
             file = Path.of_string "";
@@ -43,7 +41,6 @@ let suite =
           {
             typ = Error;
             msg = "incorrect escape sequence '\\u'";
-            id = 0;
             starts = Location.create 1 10;
             ends = Location.create 1 10;
             file = Path.of_string "";

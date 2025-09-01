@@ -9,7 +9,7 @@ module Diagnostic_type = struct
     @@ match ty with Warning -> "Warning" | Error -> "Error"
 end
 
-let pp fmt { typ; msg; id; starts; ends; file; ctx } =
+let pp fmt { typ; msg; starts; ends; file; ctx } =
   Stdlib.Format.fprintf fmt "File \"%s\", %a.\n%a: %s" (Path.to_string file)
     Location.pp starts Diagnostic_type.pp typ msg
 
@@ -20,7 +20,7 @@ module Dyn = struct
   let pp fmt = function Dyn (type a) (msg : a msg) -> pp fmt msg
 
   let equal_aux x y =
-    String.equal x.msg y.msg && x.id = y.id
+    String.equal x.msg y.msg
     && Location.equal x.starts y.starts
     && Location.equal x.ends y.ends
     && Path.equal x.file y.file && String.equal x.ctx y.ctx
