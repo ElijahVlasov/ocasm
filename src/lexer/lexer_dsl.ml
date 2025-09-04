@@ -127,5 +127,5 @@ let create (type a) inp_m inp dgn_printer =
     oct_bldr = create_number_builder original_case_buf Oct;
     dec_bldr = create_number_builder original_case_buf Dec;
     hex_bldr = create_number_builder original_case_buf Hex;
-    start_pos = Location.create 1 1;
+    start_pos = Location.default ();
   }

@@ -8,21 +8,13 @@ let tokenize content =
     (module I)
     input
     ~f:(fun inp ->
-      let open Diagnostics_handler in
-      let handler = Kitchen_sink_handler.create () in
-      let lexer =
-        Lexer.create
-          (module Mock_token)
-          (module I)
-          inp
-          (module Kitchen_sink_handler)
-          handler
-      in
+      let printer = Diagnostics_printer.create () in
+      let lexer = Lexer.create (module Mock_token) (module I) inp printer in
       Lexer.to_seq lexer)
 
 let test_parser input expected () =
   let open Mock_isa in
-  let input = tokenize input in
+  let input = Sequence.map ~f:Option.some (tokenize input) in
   let parser =
     Parser.create
       (module Mock_register)

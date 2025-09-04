@@ -3,7 +3,6 @@ include struct
   include Base
   include Ocore
   include Lexer
-  include Test_lexer_suites
   include Test_common
   include Utils
   module Int64 = Stdlib.Int64

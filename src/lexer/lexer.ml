@@ -209,7 +209,12 @@ let recover_aux st =
   let open Diagnostics.Warning in
   function
   | Second Newline_in_string_literal -> Panic.unimplemented ()
-  | First (Incorrect_escape_sequence ch) -> Panic.unimplemented ()
+  | First (Incorrect_escape_sequence ch) ->
+      let%bind _ =
+        Lexer_dsl.with_case_sensitive_builder st.dsl @@ fun builder ->
+        read_string_literal st builder
+      in
+      return ()
   | First (Incorrect_hex_escape_sequence (fst, snd)) -> Panic.unimplemented ()
   | First (Wrong_char_in_number_literal _)
   | First (Expected_vs_got _)

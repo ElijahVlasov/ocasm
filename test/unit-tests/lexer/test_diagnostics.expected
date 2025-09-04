@@ -1,0 +1,16 @@
+----- Incorrect number literal -----
+
+Error: unexpected character 'l' in a number literal.
+File "", line = 1, col = 9, line = 1, col = 9.
+Error: unexpected character 'z' in a number literal.
+File "", line = 2, col = 2, line = 2, col = 2.
+
+--------------
+
+----- Incorrect escaped sequence -----
+
+Error: incorrect escape sequence '\u'.
+File "", line = 1, col = 10, line = 1, col = 10.
+
+--------------
+

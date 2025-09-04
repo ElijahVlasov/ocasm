@@ -1,7 +1,7 @@
 open! Import
 
 module Diagnostics_type = struct
-  type t = Warning | Error [@@deriving eq, show]
+  type t = Warning | Error [@@deriving eq, show { with_path = false }]
 end
 
 type t = {

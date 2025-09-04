@@ -1,6 +1,12 @@
-(test
- (name test_lexer)
+(tests
+ (names test_lexer test_diagnostics)
  (package ocasm_private)
- (libraries alcotest base ocasm_core ocasm_lexer test_common)
+ (libraries
+  alcotest
+  base
+  ocasm_core
+  ocasm_lexer
+  test_common
+  test_lexer_suites)
  (deps
   (glob_files assets/input/*)))
