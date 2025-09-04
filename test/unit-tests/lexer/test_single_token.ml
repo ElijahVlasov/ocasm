@@ -3,7 +3,7 @@ open! Import
 let mk name content expected =
   Alcotest.test_case name `Quick @@ fun () ->
   Lexer_for_tests.with_lexer content @@ fun lexer ->
-  let got = Lexer.next_token lexer |> Option.value_exn |> fst in
+  let got = Lexer.next lexer |> fst in
   Alcotest.check
     (Testable.token Testable.mock_token)
     "Tokens don't coincide" expected got

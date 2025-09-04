@@ -1,4 +1,4 @@
-module Errors = Errors
+module Diagnostics = Diagnostics
 module Input = Input
 module Isa_token = Isa_token
 module Token = Token

@@ -3,7 +3,7 @@ open! Import
 type t = {
   starts : Location.t;  (** Here the token starts *)
   ends : Location.t;  (** Here the token ends *)
-  string : unit -> string;
+  string : string;
       (** The physical representation of the token in the source file. *)
 }
 

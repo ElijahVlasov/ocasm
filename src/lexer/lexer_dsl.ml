@@ -1,13 +1,15 @@
-open Import
+open! Import
+
+type nonrec 'a result =
+  ('a, (Diagnostics.Error.t, Diagnostics.Warning.t) Either.t) Result.t
 
 include struct
   open Token_builder
 
-  type ('a, 'h) t = {
+  type 'a t = {
     inp_m : 'a Positioned.t Input.t;
     inp : 'a Positioned.t;
-    dgn_handler_m : (module Diagnostics_handler.S with type t = 'h);
-    dgn_handler : 'h;
+    dgn_printer : Diagnostics_printer.t;
     case_sensitive_builder : case_sensitive Token_builder.t;
     case_insensitive_builder : case_insensitive Token_builder.t;
     bin_bldr : bin number_builder Token_builder.t;
@@ -78,37 +80,37 @@ let consume_until_nl st =
   consume_while_true st (fun ch ->
       not @@ (Char.is_newline ch || Char.is_eof ch))
 
-let diagnostics_aux (type h) st ?(k = Errors.Read_to_eol) msg =
-  let recovery_to_func st =
-    let open Errors in
-    function
-    | No_recovery -> None
-    | Read_to_eol -> Some (fun () -> consume_until_nl st)
-    | Custom k -> Some k
+let emit_diagnostic_message st err_or_warn =
+  let open Either in
+  let open Diagnostics_message in
+  let id, msg, ty =
+    match err_or_warn with
+    | First err ->
+        ( Diagnostics.Error.id err,
+          Diagnostics.Error.show err,
+          Diagnostics_type.Error )
+    | Second warn ->
+        ( Diagnostics.Warning.id warn,
+          Diagnostics.Warning.show warn,
+          Diagnostics_type.Warning )
   in
-  let module Diagnostics_handler =
-    (val st.dgn_handler_m : Diagnostics_handler.S with type t = h)
+  let pos = pos st in
+  let dgn_msg =
+    { id; ty; msg; starts = pos; ends = pos; file = path st; ctx = "" }
   in
-  let recovery = recovery_to_func st k in
-  Diagnostics_handler.throw ?recovery st.dgn_handler @@ msg
+  Diagnostics_printer.emit st.dgn_printer dgn_msg err_or_warn
 
-let warning st ?k warn =
-  let open Errors in
-  let open Warning in
-  Warning.to_diagnostic_message (Warning warn) (pos st) (pos st) (path st) ""
-  |> diagnostics_aux ?k st
+let error st err =
+  let open Result.Let_syntax in
+  let err = Either.First err in
+  (* We now that Diagnostics_printer will return Error anyway when we pass an
+     error. *)
+  let%bind () = emit_diagnostic_message st err in
+  Error err
 
-let error st ?k err =
-  let open Errors in
-  let open Error in
-  Error.to_diagnostic_message (Error err) (pos st) (pos st) (path st) ""
-  |> diagnostics_aux ?k st
+let warning st warn = emit_diagnostic_message st (Either.Second warn)
 
-let fail st err =
-  let open Errors in
-  error st ~k:No_recovery err
-
-let create (type a) inp_m inp dgn_handler_m dgn_handler =
+let create (type a) inp_m inp dgn_printer =
   let module I = (val inp_m : Input.S with type t = a) in
   let module I_pos = Input.MakePositioned (I) in
   let open Token_builder in
@@ -117,8 +119,7 @@ let create (type a) inp_m inp dgn_handler_m dgn_handler =
   {
     inp_m = (module I_pos);
     inp = I_pos.create inp;
-    dgn_handler_m;
-    dgn_handler;
+    dgn_printer;
     case_sensitive_builder = create_case_sensitive original_case_buf;
     case_insensitive_builder =
       create_case_insensitive original_case_buf lower_case_buf;

@@ -68,7 +68,7 @@ let build_command st next with_builder =
 let maybe_command st with_builder =
   let open Token_info in
   let token_info = last_token_info st.dsl in
-  let name = token_info.string () in
+  let name = token_info.string in
   let next = next_non_whitespace st.dsl in
   match next with
   | Colon -> label st name
