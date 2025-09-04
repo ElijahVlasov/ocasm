@@ -40,16 +40,16 @@ let return_info_real st token_real token =
       } )
 
 let rec multiline_comment st k =
-  let open Char in
-  let ch = Lexer_dsl.next st.dsl in
-  if ch = '*' then
-    (* We're potentially wrapping up the comment *)
-    if Lexer_dsl.peek st.dsl = '/' then (
-      Lexer_dsl.skip st.dsl;
-      k st (Lexer_dsl.next st.dsl))
-    else multiline_comment st k
-  else if is_eof ch then Lexer_dsl.error st.dsl Unfinished_comment
-  else multiline_comment st k
+  match Lexer_dsl.next st.dsl with
+  | '*' ->
+      let open Char in
+      (* We're potentially wrapping up the comment *)
+      if Lexer_dsl.peek st.dsl = '/' then (
+        Lexer_dsl.skip st.dsl;
+        k st (Lexer_dsl.next st.dsl))
+      else multiline_comment st k
+  | '\x00' -> Lexer_dsl.error st.dsl Unfinished_comment
+  | _ -> multiline_comment st k
 
 let multiline_comment_start st k =
   let open Char in
