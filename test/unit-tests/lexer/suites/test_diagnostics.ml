@@ -10,4 +10,5 @@ let suite =
   [
     run "Incorrect number literal" "0x123421lol\n0z2141235 42r\n0xff 0x22 0x33";
     run "Incorrect escaped sequence" "\"sdsdga\\uqwqw\"";
+    run "Multiple incorrect escaped sequences" "\"sdsdga\\uqw\\asf\\b\\c\\zqw\"";
   ]
