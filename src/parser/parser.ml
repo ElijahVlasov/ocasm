@@ -77,17 +77,13 @@ let maybe_command st with_builder =
 let entry_point st token =
   let open Token in
   let open Isa.Token in
-  try
-    Option.some
-    @@
-    match token with
-    | Name name -> must_be_label st name
-    | Isa_specific (Opcode opcode) ->
-        maybe_command st (with_opcode_builder st.dsl opcode)
-    | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
-    | Eof -> Command.Eof
-    | tok -> failwith "Unexpected token"
-  with Token_reader.Lexer_error -> None
+  match token with
+  | Name name -> must_be_label st name
+  | Isa_specific (Opcode opcode) ->
+      maybe_command st (with_opcode_builder st.dsl opcode)
+  | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
+  | Eof -> Command.Eof
+  | tok -> failwith "Unexpected token"
 
 let next st =
   skip_whitespaces_and_newlines st.dsl;
@@ -109,7 +105,7 @@ let to_seq st =
   let open Sequence.Generator in
   let rec consume_output () =
     match next st with
-    | Some Eof -> return ()
+    | Eof -> return ()
     | token -> yield token >>= consume_output
   in
   run @@ consume_output ()

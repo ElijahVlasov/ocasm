@@ -1,7 +1,7 @@
 (library
  (name parser)
  (public_name ocasm_parser)
- (libraries base ocasm_assembler ocasm_core ocasm_lexer ocasm_utils)
+ (libraries base ocasm_core ocasm_lexer ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

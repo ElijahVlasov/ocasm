@@ -1,20 +1,11 @@
 open! Import
 
 let tokenize content =
-  let open Mock_isa in
-  let module I = Lexer.Input.StringInput in
-  let input = I.create content in
-  Input.with_input
-    (module I)
-    input
-    ~f:(fun inp ->
-      let printer = Diagnostics_printer.create () in
-      let lexer = Lexer.create (module Mock_token) (module I) inp printer in
-      Lexer.to_seq lexer)
+  Lexer_for_tests.with_lexer content @@ fun lexer -> Lexer.to_seq lexer
 
 let test_parser input expected () =
   let open Mock_isa in
-  let input = Sequence.map ~f:Option.some (tokenize input) in
+  let input = tokenize input in
   let parser =
     Parser.create
       (module Mock_register)
@@ -41,10 +32,7 @@ let test_parser input expected () =
       ~build_reserved:(fun (_ : Mock_reserved.t) _ -> Panic.unreachable ())
       input
   in
-  let got =
-    Parser.to_list parser
-    |> List.map ~f:(Option.value_or_thunk ~default:(fun () -> failwith ""))
-  in
+  let got = Parser.to_list parser in
   Alcotest.check
     (Alcotest.list
     @@ Testable.command Testable.mock_instruction Testable.mock_directive)

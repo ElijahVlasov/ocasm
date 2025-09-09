@@ -2,10 +2,8 @@ open! Import
 
 type token_info = Lexer.Token_info.t
 
-exception Lexer_error
-
 type 't t = {
-  mutable toks : ('t Token.t * token_info) option Sequence.t;
+  mutable toks : ('t Token.t * token_info) Sequence.t;
   mutable peeked : ('t Token.t * token_info) option;
   mutable cur_tok_info : token_info option;
 }
@@ -14,8 +12,7 @@ let fetch_next st =
   let open Token in
   match Sequence.next st.toks with
   | None -> (Eof, Token_info.default ())
-  | Some (None, _) -> raise Lexer_error
-  | Some (Some next, tail) ->
+  | Some (next, tail) ->
       st.toks <- tail;
       next
 

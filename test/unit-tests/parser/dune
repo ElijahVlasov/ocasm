@@ -1,0 +1,13 @@
+(tests
+ (names test_parser)
+ (package ocasm_private)
+ (libraries
+  alcotest
+  base
+  ocasm_core
+  ocasm_lexer
+  ocasm_parser
+  test_common
+  test_lexer_suites)
+ (deps
+  (glob_files assets/input/*)))

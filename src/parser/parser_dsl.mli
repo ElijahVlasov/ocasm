@@ -12,7 +12,7 @@ val create :
   build_instruction:('reg, 'opcode, 'rel, 'out) Builder.Builder_fn.t ->
   build_directive:('reg, 'dir, 'rel, 'out) Builder.Builder_fn.t ->
   build_reserved:('reg, 'res, 'rel, 'rel Relocatable.t) Builder.Builder_fn.t ->
-  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
+  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t)
   Sequence.t ->
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 

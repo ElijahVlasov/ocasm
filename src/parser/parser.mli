@@ -4,16 +4,13 @@ module Builder_fn = Builder.Builder_fn
 
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'instr, 'dir_ast) t
 
-val next :
-  (_, _, _, _, _, 'instr, 'dir_ast) t -> ('instr, 'dir_ast) Command.t option
+val next : (_, _, _, _, _, 'instr, 'dir_ast) t -> ('instr, 'dir_ast) Command.t
 
 val to_seq :
-  (_, _, _, _, _, 'instr, 'dir_ast) t ->
-  ('instr, 'dir_ast) Command.t option Sequence.t
+  (_, _, _, _, _, 'instr, 'dir_ast) t -> ('instr, 'dir_ast) Command.t Sequence.t
 
 val to_list :
-  (_, _, _, _, _, 'instr, 'dir_ast) t ->
-  ('instr, 'dir_ast) Command.t option list
+  (_, _, _, _, _, 'instr, 'dir_ast) t -> ('instr, 'dir_ast) Command.t list
 
 val create :
   ?path:Path.t ->
@@ -25,6 +22,6 @@ val create :
   build_instruction:('reg, 'opcode, 'rel, 'instr) Builder.Builder_fn.t ->
   build_directive:('reg, 'dir, 'rel, 'dir_ast) Builder.Builder_fn.t ->
   build_reserved:('reg, 'res, 'rel, 'rel Relocatable.t) Builder.Builder_fn.t ->
-  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t) option
+  (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t)
   Sequence.t ->
   ('reg, 'dir, 'opcode, 'res, 'rel, 'instr, 'dir_ast) t
