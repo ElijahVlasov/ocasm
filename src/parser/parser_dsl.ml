@@ -6,6 +6,7 @@ type ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t = {
   dir_builder : ('reg, 'dir, 'rel, 'out) Builder.t;
   res_builder : ('reg, 'res, 'rel, 'rel Relocatable.t) Builder.t;
   token_reader : ('reg, 'dir, 'opcode, 'res) Isa.Token.t Token_reader.t;
+  dgn_printer : Diagnostics_printer.t;
 }
 [@@deriving fields]
 
@@ -55,8 +56,41 @@ let rec skip_whitespaces_and_newlines st =
       skip_whitespaces_and_newlines st
   | _ -> ()
 
+let pos st =
+  let open Token_info in
+  let token_info = Token_reader.last_token_info st.token_reader in
+  (token_info.starts, token_info.ends)
+
+let emit_diagnostic_message st err_or_warn =
+  let open Either in
+  let open Diagnostics_message in
+  let id, msg, ty =
+    match err_or_warn with
+    | First err ->
+        ( Diagnostics.Error.id err,
+          Diagnostics.Error.show err,
+          Diagnostics_type.Error )
+    | Second warn ->
+        ( Diagnostics.Warning.id warn,
+          Diagnostics.Warning.show warn,
+          Diagnostics_type.Warning )
+  in
+  let starts, ends = pos st in
+  let dgn_msg = { id; ty; msg; starts; ends; file = path st; ctx = "" } in
+  Diagnostics_printer.emit st.dgn_printer dgn_msg err_or_warn
+
+let error st err =
+  let open Result.Let_syntax in
+  let err = Either.First err in
+  (* We now that Diagnostics_printer will return Error anyway when we pass an
+     error. *)
+  let%bind () = emit_diagnostic_message st err in
+  Error err
+
+let warning st warn = emit_diagnostic_message st (Either.Second warn)
+
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
-    ~build_instruction ~build_directive ~build_reserved toks =
+    ~build_instruction ~build_directive ~build_reserved toks dgn_printer =
   {
     path;
     opcode_builder =
@@ -66,4 +100,5 @@ let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
     res_builder =
       Builder.create reg_m res_m ~word_size ~builder_fn:build_reserved;
     token_reader = Token_reader.create toks;
+    dgn_printer;
   }

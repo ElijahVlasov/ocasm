@@ -14,6 +14,7 @@ val create :
   build_reserved:('reg, 'res, 'rel, 'rel Relocatable.t) Builder.Builder_fn.t ->
   (('reg, 'dir, 'opcode, 'res) Isa.Token.t Token.t * Lexer.Token_info.t)
   Sequence.t ->
+  Diagnostics_printer.t ->
   ('reg, 'dir, 'opcode, 'res, 'rel, 'out) t
 
 val with_opcode_builder :

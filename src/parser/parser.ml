@@ -6,7 +6,9 @@ module Builder_fn = Builder.Builder_fn
 type ('reg, 'dir, 'opcode, 'res, 'rel, 'instr, 'dir_ast) t = {
   dsl :
     ('reg, 'dir, 'opcode, 'res, 'rel, ('instr, 'dir_ast) Command.t) Parser_dsl.t;
+  mutable no_errors : bool;
 }
+[@@deriving fields]
 
 let label st name =
   (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());
@@ -90,7 +92,7 @@ let next st =
   next_non_whitespace st.dsl |> entry_point st
 
 let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
-    ~build_instruction ~build_directive ~build_reserved toks =
+    ~build_instruction ~build_directive ~build_reserved toks dgn_printer =
   let build_instruction x arg =
     Command.instruction @@ build_instruction x arg
   in
@@ -98,7 +100,8 @@ let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
   {
     dsl =
       create ~path reg_m dir_m opcode_m res_m ~word_size ~build_instruction
-        ~build_directive ~build_reserved toks;
+        ~build_directive ~build_reserved toks dgn_printer;
+    no_errors = true;
   }
 
 let to_seq st =
