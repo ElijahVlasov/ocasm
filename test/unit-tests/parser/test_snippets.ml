@@ -31,6 +31,7 @@ let test_parser input expected () =
         | Dir2 -> Mock_directive.Dir2 arg1)
       ~build_reserved:(fun (_ : Mock_reserved.t) _ -> Panic.unreachable ())
       input
+      (Diagnostics_printer.create ())
   in
   let got = Parser.to_list parser in
   Alcotest.check
