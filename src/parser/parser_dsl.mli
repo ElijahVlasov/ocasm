@@ -10,10 +10,6 @@ module Mk
 
   val create :
     ?path:Path.t ->
-    'reg Isa.Register.t ->
-    'dir Isa.Expr.t ->
-    'opcode Isa.Expr.t ->
-    'res Isa.Expr.t ->
     word_size:int ->
     build_instruction:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
     build_directive:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->

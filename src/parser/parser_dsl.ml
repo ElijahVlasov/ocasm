@@ -96,8 +96,8 @@ struct
 
   let warning st warn = emit_diagnostic_message st (Either.Second warn)
 
-  let create ?(path = Path.empty) reg_m dir_m opcode_m res_m ~word_size
-      ~build_instruction ~build_directive ~build_reserved toks dgn_printer =
+  let create ?(path = Path.empty) ~word_size ~build_instruction ~build_directive
+      ~build_reserved toks dgn_printer =
     {
       path;
       opcode_builder =

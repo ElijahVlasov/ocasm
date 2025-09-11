@@ -1,9 +1,11 @@
 open! Import
 
-let create_lexer inp_m inp =
+let create_lexer (type a) inp_m inp =
   let open Mock_isa in
+  let module Input = (val inp_m : Input.S with type t = a) in
+  let module Lexer = Lexer.Mk (Mock_token) (Input) in
   let printer = Diagnostics_printer.create () in
-  Lexer.create (module Mock_token) inp_m inp printer
+  Lexer.create inp printer
 
 let with_lexer content f =
   let module I = Lexer.Input.StringInput in
