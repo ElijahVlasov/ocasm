@@ -12,10 +12,10 @@ module Mk
     ?path:Path.t ->
     word_size:int ->
     build_instruction:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
-    build_directive:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
+    build_directive:(Reg.t, Direc.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
     build_reserved:
       ( Reg.t,
-        Opcode.t,
+        Reserved.t,
         Reloc_data.t,
         Reloc_data.t Relocatable.t )
       Builder.Builder_fn.t ->
@@ -33,8 +33,8 @@ module Mk
 
   val with_dir_builder :
     'out t ->
-    'dir ->
-    ((Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.t -> 'a) ->
+    Direc.t ->
+    ((Reg.t, Direc.t, Reloc_data.t, 'out) Builder.t -> 'a) ->
     'a
 
   val add_register :

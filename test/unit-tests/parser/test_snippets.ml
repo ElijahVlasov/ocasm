@@ -6,13 +6,11 @@ let tokenize content =
 let test_parser input expected () =
   let open Mock_isa in
   let input = tokenize input in
+  let module Parser =
+    Parser.Mk (Mock_opcode) (Mock_dir) (Mock_reserved) (Mock_register) (Unit)
+  in
   let parser =
-    Parser.create
-      (module Mock_register)
-      (module Mock_dir)
-      (module Mock_opcode)
-      (module Mock_reserved)
-      ~word_size:32
+    Parser.create ~word_size:32
       ~build_instruction:(fun
           opcode (args : (_, Mock_reserved.t) Argument.t array) ->
         let arg1 = Argument.unwrap_reg_exn (Array.unsafe_get args 0) in
