@@ -1,22 +1,23 @@
 open! Import
 include module type of Builder_intf
 
-type ('reg, 'comm, 'rel, 'a) t
+module Mk (Reg : Isa.Register.S) (Reloc_data : T.T) : sig
+  type ('comm, 'a) t
 
-val create :
-  ?len:int ->
-  'reg Isa.Register.t ->
-  'comm Isa.Expr.t ->
-  word_size:int ->
-  builder_fn:('reg, 'comm, 'rel, 'a) Builder_fn.t ->
-  ('reg, 'comm, 'rel, 'a) t
+  val create :
+    ?len:int ->
+    'comm Isa.Expr.t ->
+    word_size:int ->
+    builder_fn:(Reg.t, 'comm, Reloc_data.t, 'a) Builder_fn.t ->
+    ('comm, 'a) t
 
-val add_register : ('reg, 'comm, 'rel, 'a) t -> 'reg -> unit
-val add_rel : ('reg, 'comm, 'rel, 'a) t -> 'rel Relocatable.t -> unit
-val add_string : ('reg, 'comm, 'rel, 'a) t -> string -> unit
+  val add_register : ('comm, 'a) t -> Reg.t -> unit
+  val add_rel : ('comm, 'a) t -> Reloc_data.t Relocatable.t -> unit
+  val add_string : ('comm, 'a) t -> string -> unit
 
-val add_base_offset :
-  ('reg, 'comm, 'rel, 'a) t -> 'reg -> 'rel Relocatable.t -> unit
+  val add_base_offset :
+    ('comm, 'a) t -> Reg.t -> Reloc_data.t Relocatable.t -> unit
 
-val start : ('reg, 'comm, 'rel, 'a) t -> 'comm -> unit
-val build : ('reg, 'comm, 'rel, 'a) t -> 'a
+  val start : ('comm, 'a) t -> 'comm -> unit
+  val build : ('comm, 'a) t -> 'a
+end

@@ -8,12 +8,16 @@ module Mk
     (Reg : Register.S)
     (Reloc_data : T.T) =
 struct
+  module Builder = struct
+    module Builder_fn = Builder.Builder_fn
+    include Builder.Mk (Reg) (Reloc_data)
+  end
+
   type 'out t = {
     path : Path.t;
-    opcode_builder : (Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.t;
-    dir_builder : (Reg.t, Direc.t, Reloc_data.t, 'out) Builder.t;
-    res_builder :
-      (Reg.t, Reserved.t, Reloc_data.t, Reloc_data.t Relocatable.t) Builder.t;
+    opcode_builder : (Opcode.t, 'out) Builder.t;
+    dir_builder : (Direc.t, 'out) Builder.t;
+    res_builder : (Reserved.t, Reloc_data.t Relocatable.t) Builder.t;
     token_reader :
       (Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token_reader.t;
     dgn_printer : Diagnostics_printer.t;
@@ -101,20 +105,11 @@ struct
     {
       path;
       opcode_builder =
-        Builder.create
-          (module Reg)
-          (module Opcode)
-          ~word_size ~builder_fn:build_instruction;
+        Builder.create (module Opcode) ~word_size ~builder_fn:build_instruction;
       dir_builder =
-        Builder.create
-          (module Reg)
-          (module Direc)
-          ~word_size ~builder_fn:build_directive;
+        Builder.create (module Direc) ~word_size ~builder_fn:build_directive;
       res_builder =
-        Builder.create
-          (module Reg)
-          (module Reserved)
-          ~word_size ~builder_fn:build_reserved;
+        Builder.create (module Reserved) ~word_size ~builder_fn:build_reserved;
       token_reader = Token_reader.create toks;
       dgn_printer;
     }

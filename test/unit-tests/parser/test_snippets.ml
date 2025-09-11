@@ -11,8 +11,7 @@ let test_parser input expected () =
   in
   let parser =
     Parser.create ~word_size:32
-      ~build_instruction:(fun
-          opcode (args : (_, Mock_reserved.t) Argument.t array) ->
+      ~build_instruction:(fun opcode args ->
         let arg1 = Argument.unwrap_reg_exn (Array.unsafe_get args 0) in
         let arg2 = Argument.unwrap_reg_exn (Array.unsafe_get args 1) in
         let open Mock_opcode in
@@ -27,7 +26,7 @@ let test_parser input expected () =
         match dir with
         | Dir1 -> Mock_directive.Dir1 arg1
         | Dir2 -> Mock_directive.Dir2 arg1)
-      ~build_reserved:(fun (_ : Mock_reserved.t) _ -> Panic.unreachable ())
+      ~build_reserved:(fun _ _ -> Panic.unreachable ())
       input
       (Diagnostics_printer.create ())
   in
