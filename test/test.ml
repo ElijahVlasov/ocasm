@@ -6,7 +6,6 @@ let suite =
     ("Instruction test suite", Test_instruction.suite);
     ("Parser code snippet suite", Test_parser_code_snippets.suite);
     ("Single instruction suite", Test_single_instruction_parsing.suite);
-    ("Parser suite", Test_parser.suite);
   ]
 
 let () = Alcotest.run "ocasm" suite

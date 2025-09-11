@@ -7,8 +7,6 @@ module Mk
     (Reg : Isa.Register.S)
     (Reloc_data : T.T) : sig
   module Builder : sig
-    module Builder_fn = Builder.Builder_fn
-
     type ('comm, 'out) t
   end
 
@@ -17,14 +15,10 @@ module Mk
   val create :
     ?path:Path.t ->
     word_size:int ->
-    build_instruction:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
-    build_directive:(Reg.t, Direc.t, Reloc_data.t, 'out) Builder.Builder_fn.t ->
+    build_instruction:(Reg.t, Opcode.t, Reloc_data.t, 'out) Builder_fn.t ->
+    build_directive:(Reg.t, Direc.t, Reloc_data.t, 'out) Builder_fn.t ->
     build_reserved:
-      ( Reg.t,
-        Reserved.t,
-        Reloc_data.t,
-        Reloc_data.t Relocatable.t )
-      Builder.Builder_fn.t ->
+      (Reg.t, Reserved.t, Reloc_data.t, Reloc_data.t Relocatable.t) Builder_fn.t ->
     ((Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token.t
     * Lexer.Token_info.t)
     Sequence.t ->

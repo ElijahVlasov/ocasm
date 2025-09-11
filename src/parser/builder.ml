@@ -1,6 +1,5 @@
 open! Import
 open Isa
-include Builder_intf
 
 module Mk (Reg : Register.S) (Reloc_data : T.T) = struct
   type ('comm, 'a) t = {

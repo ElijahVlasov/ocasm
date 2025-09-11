@@ -1,5 +1,4 @@
 open! Import
-include module type of Builder_intf
 
 module Mk (Reg : Isa.Register.S) (Reloc_data : T.T) : sig
   type ('comm, 'a) t

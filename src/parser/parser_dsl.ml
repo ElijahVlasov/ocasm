@@ -8,10 +8,7 @@ module Mk
     (Reg : Register.S)
     (Reloc_data : T.T) =
 struct
-  module Builder = struct
-    module Builder_fn = Builder.Builder_fn
-    include Builder.Mk (Reg) (Reloc_data)
-  end
+  module Builder = Builder.Mk (Reg) (Reloc_data)
 
   type 'out t = {
     path : Path.t;

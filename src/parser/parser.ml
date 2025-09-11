@@ -1,6 +1,6 @@
 open! Import
 module Argument = Argument
-module Builder_fn = Builder.Builder_fn
+module Builder_fn = Builder_fn
 
 module Mk
     (Opcode : Isa.Expr.S)
