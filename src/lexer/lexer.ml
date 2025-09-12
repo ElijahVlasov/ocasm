@@ -1,9 +1,9 @@
 open! Import
 include Lexer_intf
 
-module Mk (Isa_token : Isa_token.S) (Input : Input.S) = struct
-  type t = {
-    dsl : Input.t Lexer_dsl.t;
+module Mk (Isa_token : Isa_token.S) = struct
+  type 'a t = {
+    dsl : 'a Lexer_dsl.t;
         (** Low-level lexer state (position in the file, errors, token
             builders). *)
     mutable no_errors : bool;
@@ -237,8 +237,8 @@ module Mk (Isa_token : Isa_token.S) (Input : Input.S) = struct
         recover st err;
         next st
 
-  let create inp dgn_printer =
-    { dsl = Lexer_dsl.create (module Input) inp dgn_printer; no_errors = true }
+  let create inp_m inp dgn_printer =
+    { dsl = Lexer_dsl.create inp_m inp dgn_printer; no_errors = true }
 
   let to_seq lexer =
     let open Sequence.Generator in
