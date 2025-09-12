@@ -8,6 +8,8 @@ let test_parser input expected () =
   let input = tokenize input in
   let module Parser =
     Parser.Mk (Mock_opcode) (Mock_dir) (Mock_reserved) (Mock_register) (Unit)
+      (Mock_instruction)
+      (Mock_directive)
   in
   let parser =
     Parser.create ~word_size:32

@@ -7,15 +7,17 @@ module Mk
     (Direc : Isa.Expr.S)
     (Reserved : Isa.Expr.S)
     (Reg : Isa.Register.S)
-    (Reloc_data : T.T) =
+    (Reloc_data : T.T)
+    (Struct_instr : T.T)
+    (Struct_dir : T.T) =
 struct
   module Parser_dsl =
     Parser_dsl.Mk (Opcode) (Direc) (Reserved) (Reg) (Reloc_data)
 
   open Parser_dsl
 
-  type ('instr, 'dir_ast) t = {
-    dsl : ('instr, 'dir_ast) Command.t Parser_dsl.t;
+  type t = {
+    dsl : (Struct_instr.t, Struct_dir.t) Command.t Parser_dsl.t;
     mutable no_errors : bool;
   }
   [@@deriving fields]
