@@ -1,4 +1,14 @@
-include Argument_intf
+open! Import
+
+exception Unwrap_failed
+
+type ('reg, 'rel) t =
+  | Reg of 'reg
+  | Rel of 'rel Relocatable.t
+  | Base_offset of 'rel Relocatable.t * 'reg
+  | StringLiteral of string
+  | Uninit
+[@@deriving eq, show]
 
 let unwrap_reg_thunk ~default = function Reg reg -> reg | _ -> default ()
 let unwrap_rel_thunk ~default = function Rel rel -> rel | _ -> default ()

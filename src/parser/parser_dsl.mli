@@ -12,6 +12,9 @@ module Mk
 
   type 'out t
 
+  type 'a result =
+    ('a, (Diagnostics.Error.t, Diagnostics.Warning.t) Either.t) Result.t
+
   val create :
     ?path:Path.t ->
     word_size:int ->
@@ -31,19 +34,22 @@ module Mk
   val with_dir_builder :
     'out t -> Direc.t -> ((Direc.t, 'out) Builder.t -> 'a) -> 'a
 
-  val add_register : 'out t -> ('comm, 'out) Builder.t -> Reg.t -> unit
+  val add_register : 'out t -> ('comm, 'out) Builder.t -> Reg.t -> unit result
 
   val add_rel :
-    'out t -> ('comm, 'out) Builder.t -> Reloc_data.t Relocatable.t -> unit
+    'out t ->
+    ('comm, 'out) Builder.t ->
+    Reloc_data.t Relocatable.t ->
+    unit result
 
-  val add_string : 'out t -> ('comm, 'out) Builder.t -> string -> unit
+  val add_string : 'out t -> ('comm, 'out) Builder.t -> string -> unit result
 
   val add_base_offset :
     'out t ->
     ('comm, 'out) Builder.t ->
     Reg.t ->
     Reloc_data.t Relocatable.t ->
-    unit
+    unit result
 
   val build : 'out t -> ('comm, 'out) Builder.t -> 'out
   val next : _ t -> (Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token.t
@@ -59,4 +65,6 @@ module Mk
     _ t -> (Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token.t
 
   val last_token_info : _ t -> Token_info.t
+  val warning : _ t -> Diagnostics.Warning.t -> unit result
+  val error : _ t -> Diagnostics.Error.t -> 'a result
 end

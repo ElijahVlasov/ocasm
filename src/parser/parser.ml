@@ -26,52 +26,56 @@ struct
     (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());
     Command.Label name
 
+  open Result.Let_syntax
+
   let must_be_label st name =
     let open Token in
     match next_non_whitespace st.dsl with
-    | Colon -> label st name
-    | _ -> failwith "Unexpected token"
+    | Colon -> return @@ label st name
+    | _ -> error st.dsl @@ Not_a_command name
 
   let parse_register st =
     let open Token in
     let open Isa.Token in
     match next_non_whitespace st.dsl with
-    | Isa_specific (Reg reg) -> reg
-    | _ -> failwith "Unexpected token"
+    | Isa_specific (Reg reg) -> return reg
+    | _ -> error st.dsl @@ Expected_register
 
   let maybe_offset st bldr off =
     let open Token in
     match peek_non_whitespace st.dsl with
     | LBracket -> (
         skip st.dsl;
-        let reg = parse_register st in
+        let%bind reg = parse_register st in
         match next_non_whitespace st.dsl with
         | RBracket -> Parser_dsl.add_base_offset st.dsl bldr reg off
-        | _ -> failwith "Expected a closing bracket ")
+        | _ -> error st.dsl @@ Expected RBracket)
     | _ -> Parser_dsl.add_rel st.dsl bldr off
 
   let parse_arg st bldr next =
     let open Token in
     let open Isa.Token in
-    (match next with
-    | Isa_specific (Reg reg) -> Parser_dsl.add_register st.dsl bldr reg
-    | Name name -> Relocatable.Name name |> maybe_offset st bldr
-    | Dec x | Bin x | Hex x | Oct x ->
-        Relocatable.of_big_integer x |> maybe_offset st bldr
-    | String_literal str -> Parser_dsl.add_string st.dsl bldr str
-    | White_space -> Panic.unreachable ~msg:"Whitespace" ()
-    | t ->
-        failwith
-          (Stdlib.Format.sprintf "%a" (fun _ -> Token.show (fun _ _ -> ())) t));
+    let%bind x =
+      match next with
+      | Isa_specific (Reg reg) -> Parser_dsl.add_register st.dsl bldr reg
+      | Name name -> Relocatable.Name name |> maybe_offset st bldr
+      | Dec x | Bin x | Hex x | Oct x ->
+          Relocatable.of_big_integer x |> maybe_offset st bldr
+      | String_literal str -> Parser_dsl.add_string st.dsl bldr str
+      | White_space -> Panic.unreachable ~msg:"Whitespace" ()
+      | t ->
+          failwith
+            (Stdlib.Format.sprintf "%a" (fun _ -> Token.show (fun _ _ -> ())) t)
+    in
     let next = next_non_whitespace st.dsl in
     match next with
-    | Comma -> false
-    | Eol | Eof -> true
-    | _ -> failwith "Wrong token at the end of an argument"
+    | Comma -> return false
+    | Eol | Eof -> return true
+    | _ -> error st.dsl @@ Expected Comma
 
   let rec parse_args st bldr next =
-    let is_finished = parse_arg st bldr next in
-    if is_finished then build st.dsl bldr
+    let%bind is_finished = parse_arg st bldr next in
+    if is_finished then return @@ build st.dsl bldr
     else
       let next = next_non_whitespace st.dsl in
       parse_args st bldr next
@@ -85,23 +89,47 @@ struct
     let name = token_info.string in
     let next = next_non_whitespace st.dsl in
     match next with
-    | Colon -> label st name
+    | Colon -> return @@ label st name
     | _ -> build_command st next with_builder
 
-  let entry_point st token =
+  let next_aux st =
     let open Token in
     let open Isa.Token in
-    match token with
+    skip_whitespaces_and_newlines st.dsl;
+    match next_non_whitespace st.dsl with
     | Name name -> must_be_label st name
     | Isa_specific (Opcode opcode) ->
         maybe_command st (with_opcode_builder st.dsl opcode)
     | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
-    | Eof -> Command.Eof
+    | Eof -> return Command.Eof
     | tok -> failwith "Unexpected token"
 
-  let next st =
-    skip_whitespaces_and_newlines st.dsl;
-    next_non_whitespace st.dsl |> entry_point st
+  (* TODO: implement this. *)
+  let recover_aux st =
+    let open Either in
+    let open Diagnostics.Error in
+    let open Diagnostics.Warning in
+    function
+    | Second Test -> Panic.unimplemented ()
+    | First (Not_a_command name) -> Panic.unimplemented ()
+    | First Expected_register -> Panic.unimplemented ()
+    | First (Expected tok) -> Panic.unimplemented ()
+    | First (Wrong_register_length (expected, got)) -> Panic.unimplemented ()
+    | First (Wrong_word_length (expected, got)) -> Panic.unimplemented ()
+    | First (Wrong_base_length (expected, got)) -> Panic.unimplemented ()
+    | First (Wrong_offset_length (expected, got)) -> Panic.unimplemented ()
+    | First (Too_many_args n) -> Panic.unimplemented () (* added *)
+
+  let rec recover st err =
+    match recover_aux st err with Ok () -> () | Error err -> recover st err
+
+  let rec next st =
+    match next_aux st with
+    | Ok next -> next
+    | Error err ->
+        st.no_errors <- false;
+        recover st err;
+        next st
 
   let create ?(path = Path.empty) ~word_size ~build_instruction ~build_directive
       ~build_reserved toks dgn_printer =

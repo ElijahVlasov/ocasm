@@ -1,7 +1,15 @@
 open Import
 
 module Error = struct
-  type t = Not_a_command of string
+  type t =
+    | Not_a_command of string
+    | Expected_register
+    | Expected of unit Lexer.Token.t
+    | Wrong_register_length of (int * int)
+    | Wrong_word_length of (int * int)
+    | Wrong_base_length of (int * int)
+    | Wrong_offset_length of (int * int)
+    | Too_many_args of int
 end
 
 module Warning = struct

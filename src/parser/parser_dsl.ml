@@ -10,6 +10,9 @@ module Mk
 struct
   module Builder = Builder.Mk (Reg) (Reloc_data)
 
+  type 'a result =
+    ('a, (Diagnostics.Error.t, Diagnostics.Warning.t) Either.t) Result.t
+
   type 'out t = {
     path : Path.t;
     opcode_builder : (Opcode.t, 'out) Builder.t;
@@ -29,10 +32,14 @@ struct
     Builder.start st.dir_builder dir;
     f st.dir_builder
 
-  let add_register _st bldr reg = Builder.add_register bldr reg
-  let add_rel _st bldr rel = Builder.add_rel bldr rel
-  let add_string _st bldr str = Builder.add_string bldr str
-  let add_base_offset _st bldr base off = Builder.add_base_offset bldr base off
+  let map_error = Result.map_error ~f:(fun err -> Either.First err)
+  let add_register _st bldr reg = map_error @@ Builder.add_register bldr reg
+  let add_rel _st bldr rel = map_error @@ Builder.add_rel bldr rel
+  let add_string _st bldr str = map_error @@ Builder.add_string bldr str
+
+  let add_base_offset _st bldr base off =
+    map_error @@ Builder.add_base_offset bldr base off
+
   let build _st bldr = Builder.build bldr
 
   let next st =

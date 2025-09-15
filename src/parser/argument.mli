@@ -1,5 +1,14 @@
 open! Import
-include module type of Argument_intf
+
+exception Unwrap_failed
+
+type ('reg, 'rel) t =
+  | Reg of 'reg
+  | Rel of 'rel Relocatable.t
+  | Base_offset of 'rel Relocatable.t * 'reg
+  | StringLiteral of string
+  | Uninit
+[@@deriving eq, show]
 
 val unwrap_reg_thunk : default:(unit -> 'reg) -> ('reg, _) t -> 'reg
 

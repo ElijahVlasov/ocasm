@@ -13,17 +13,8 @@ module Mk (Reg : Register.S) (Reloc_data : T.T) = struct
   }
   [@@deriving fields]
 
-  let create ?(len = 3) comm_m ~word_size ~builder_fn =
-    let open Argument in
-    {
-      comm = None;
-      args = Array.create ~len Uninit;
-      ind = 0;
-      ty = [];
-      comm_m;
-      word_size;
-      builder_fn;
-    }
+  open Result
+  open Result.Let_syntax
 
   let unsafe_add_arg st arg rst =
     st.args.(st.ind) <- arg;
@@ -39,27 +30,35 @@ module Mk (Reg : Register.S) (Reloc_data : T.T) = struct
 
   let validate_arg st ty arg =
     let open Argument in
+    let open Diagnostics.Error in
     let open Isa in
     match (ty, arg) with
     | Type.Reg n, Reg reg ->
-        if Reg.bit_size reg <> n then failwith "Unexpected register length"
+        ok_if_true
+          (Reg.bit_size reg = n)
+          ~error:(Wrong_register_length (Reg.bit_size reg, n))
     | Type.Word n, Rel rel ->
         let bs = rel_bs st rel in
-        if bs >= n then failwith "Incorrect bit length"
+        ok_if_true (bs <= n) ~error:(Wrong_word_length (bs, n))
     | Type.Base_offset (off_size, base_size), Base_offset (off, base) ->
         let off_bs = rel_bs st off in
         let base_bs = Reg.bit_size base in
-        if base_bs >= base_size || off_bs >= off_size then
-          failwith "Something wrong with bit sizes"
-    | Type.String, StringLiteral _ -> ()
-    | _, _ -> failwith "Terribly wrong"
+        let%bind () =
+          ok_if_true (base_bs <= base_size)
+            ~error:(Wrong_base_length (base_size, base_bs))
+        in
+        ok_if_true (off_bs <= off_size)
+          ~error:(Wrong_offset_length (off_size, off_bs))
+    | Type.String, StringLiteral _ -> return ()
+    | _, _ -> Panic.unreachable ~msg:"Terribly wrong" ()
 
   let add_arg st arg =
+    let open Diagnostics.Error in
     match st.ty with
-    | [] -> failwith "The comm is not expecting more arguments"
+    | [] -> fail @@ Too_many_args (Array.length st.args)
     | ty :: rst ->
-        validate_arg st ty arg;
-        unsafe_add_arg st arg rst
+        let%bind () = validate_arg st ty arg in
+        return @@ unsafe_add_arg st arg rst
 
   let add_register st reg = add_arg st (Reg reg)
   let add_rel st rel = add_arg st (Rel rel)
@@ -73,4 +72,16 @@ module Mk (Reg : Register.S) (Reloc_data : T.T) = struct
     st.comm <- Some comm
 
   let build st = st.builder_fn (Option.value_exn st.comm) st.args
+
+  let create ?(len = 3) comm_m ~word_size ~builder_fn =
+    let open Argument in
+    {
+      comm = None;
+      args = Array.create ~len Uninit;
+      ind = 0;
+      ty = [];
+      comm_m;
+      word_size;
+      builder_fn;
+    }
 end
