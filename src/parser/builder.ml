@@ -1,15 +1,27 @@
 open! Import
-open Isa
 
-module Mk (Reg : Register.S) (Reloc_data : T.T) = struct
+module Mk (I : sig
+  type register
+
+  module Reg : sig
+    type t := register
+
+    val bit_size : t -> int
+  end
+
+  type reloc_data
+end) =
+struct
+  open I
+
   type ('comm, 'a) t = {
     mutable comm : 'comm option;
-    args : (Reg.t, Reloc_data.t) Argument.t array;
+    args : (register, reloc_data) Argument.t array;
     mutable ind : int;
     mutable ty : Isa.Type.t list;
     comm_m : 'comm Isa.Expr.t;
     word_size : int;
-    builder_fn : (Reg.t, 'comm, Reloc_data.t, 'a) Builder_fn.t;
+    builder_fn : (register, 'comm, reloc_data, 'a) Builder_fn.t;
   }
   [@@deriving fields]
 

@@ -6,7 +6,41 @@ module Mk
     (Direc : Expr.S)
     (Reserved : Expr.S)
     (Reg : Register.S)
-    (Reloc_data : T.T) =
+    (Reloc_data : T.T)
+    (I : sig
+      type register
+
+      module Reg : Register.S with type t := register
+
+      type reloc_data
+      type opcode
+      type structured_instruction
+
+      module Opcode : sig
+        include Expr.S with type t := opcode
+
+        val build :
+          (register, opcode, reloc_data, structured_instruction) Builder_fn.t
+      end
+
+      type directive
+      type structured_directive
+
+      module Directive : sig
+        include Expr.S with type t := directive
+
+        val build :
+          (register, directive, reloc_data, structured_directive) Builder_fn.t
+      end
+
+      type reserved
+
+      module Reserved : sig
+        include Expr.S with type t := reserved
+
+        val 
+      end
+    end) =
 struct
   module Builder = Builder.Mk (Reg) (Reloc_data)
 
