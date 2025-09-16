@@ -2,25 +2,37 @@ open! Import
 module Argument = Argument
 module Builder_fn = Builder_fn
 
-module Mk
-    (Opcode : Isa.Expr.S)
-    (Direc : Isa.Expr.S)
-    (Reserved : Isa.Expr.S)
-    (Reg : Isa.Register.S)
-    (Reloc_data : T.T)
-    (Struct_instr : T.T)
-    (Struct_dir : T.T) =
-struct
-  module Parser_dsl =
-    Parser_dsl.Mk (Opcode) (Direc) (Reserved) (Reg) (Reloc_data)
+module Mk (I : sig
+  module Reg : Isa.Register.S
 
+  type reloc_data
+  type structured_instruction
+
+  module Opcode : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, structured_instruction) Builder_fn.t
+  end
+
+  type structured_directive
+
+  module Directive : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, structured_directive) Builder_fn.t
+  end
+
+  module Reserved : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, reloc_data Relocatable.t) Builder_fn.t
+  end
+end) =
+struct
+  module Parser_dsl = Parser_dsl.Mk (I)
   open Parser_dsl
 
-  type t = {
-    dsl : (Struct_instr.t, Struct_dir.t) Command.t Parser_dsl.t;
-    mutable no_errors : bool;
-  }
-  [@@deriving fields]
+  type t = { dsl : Parser_dsl.t; mutable no_errors : bool } [@@deriving fields]
 
   let label st name =
     (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());

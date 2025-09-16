@@ -1,10 +1,8 @@
 open! Import
 
 module Mk (I : sig
-  type register
-
   module Reg : sig
-    type t := register
+    type t
 
     val bit_size : t -> int
   end
@@ -16,12 +14,12 @@ struct
 
   type ('comm, 'a) t = {
     mutable comm : 'comm option;
-    args : (register, reloc_data) Argument.t array;
+    args : (Reg.t, reloc_data) Argument.t array;
     mutable ind : int;
     mutable ty : Isa.Type.t list;
     comm_m : 'comm Isa.Expr.t;
     word_size : int;
-    builder_fn : (register, 'comm, reloc_data, 'a) Builder_fn.t;
+    builder_fn : (Reg.t, 'comm, reloc_data, 'a) Builder_fn.t;
   }
   [@@deriving fields]
 

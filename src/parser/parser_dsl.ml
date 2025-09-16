@@ -1,59 +1,46 @@
 open! Import
 open Isa
 
-module Mk
-    (Opcode : Expr.S)
-    (Direc : Expr.S)
-    (Reserved : Expr.S)
-    (Reg : Register.S)
-    (Reloc_data : T.T)
-    (I : sig
-      type register
+module Mk (I : sig
+  module Reg : Register.S
 
-      module Reg : Register.S with type t := register
+  type reloc_data
+  type structured_instruction
 
-      type reloc_data
-      type opcode
-      type structured_instruction
+  module Opcode : sig
+    include Expr.S
 
-      module Opcode : sig
-        include Expr.S with type t := opcode
+    val build : (Reg.t, t, reloc_data, structured_instruction) Builder_fn.t
+  end
 
-        val build :
-          (register, opcode, reloc_data, structured_instruction) Builder_fn.t
-      end
+  type structured_directive
 
-      type directive
-      type structured_directive
+  module Directive : sig
+    include Expr.S
 
-      module Directive : sig
-        include Expr.S with type t := directive
+    val build : (Reg.t, t, reloc_data, structured_directive) Builder_fn.t
+  end
 
-        val build :
-          (register, directive, reloc_data, structured_directive) Builder_fn.t
-      end
+  module Reserved : sig
+    include Expr.S
 
-      type reserved
-
-      module Reserved : sig
-        include Expr.S with type t := reserved
-
-        val 
-      end
-    end) =
+    val build : (Reg.t, t, reloc_data, reloc_data Relocatable.t) Builder_fn.t
+  end
+end) =
 struct
-  module Builder = Builder.Mk (Reg) (Reloc_data)
+  open I
+  module Builder = Builder.Mk (I)
 
   type 'a result =
     ('a, (Diagnostics.Error.t, Diagnostics.Warning.t) Either.t) Result.t
 
-  type 'out t = {
+  type t = {
     path : Path.t;
-    opcode_builder : (Opcode.t, 'out) Builder.t;
-    dir_builder : (Direc.t, 'out) Builder.t;
-    res_builder : (Reserved.t, Reloc_data.t Relocatable.t) Builder.t;
+    opcode_builder : (Opcode.t, structured_instruction) Builder.t;
+    dir_builder : (Directive.t, structured_directive) Builder.t;
+    res_builder : (Reserved.t, reloc_data Relocatable.t) Builder.t;
     token_reader :
-      (Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token_reader.t;
+      (Reg.t, Directive.t, Opcode.t, Reserved.t) Isa.Token.t Token_reader.t;
     dgn_printer : Diagnostics_printer.t;
   }
   [@@deriving fields]
@@ -66,7 +53,7 @@ struct
     Builder.start st.dir_builder dir;
     f st.dir_builder
 
-  let map_error = Result.map_error ~f:(fun err -> Either.First err)
+  let map_error = Result.map_error ~f:Either.first
   let add_register _st bldr reg = map_error @@ Builder.add_register bldr reg
   let add_rel _st bldr rel = map_error @@ Builder.add_rel bldr rel
   let add_string _st bldr str = map_error @@ Builder.add_string bldr str
@@ -83,7 +70,7 @@ struct
   let peek st = Token_reader.peek st.token_reader
 
   let skip st =
-    let _ = Token_reader.next st.token_reader in
+    let (_ : _ Lexer.Token.t) = Token_reader.next st.token_reader in
     ()
 
   let last_token_info st = Token_reader.last_token_info st.token_reader
@@ -138,16 +125,15 @@ struct
 
   let warning st warn = emit_diagnostic_message st (Either.Second warn)
 
-  let create ?(path = Path.empty) ~word_size ~build_instruction ~build_directive
-      ~build_reserved toks dgn_printer =
+  let create ?(path = Path.empty) ~word_size toks dgn_printer =
     {
       path;
       opcode_builder =
-        Builder.create (module Opcode) ~word_size ~builder_fn:build_instruction;
+        Builder.create (module Opcode) ~word_size ~builder_fn:Opcode.build;
       dir_builder =
-        Builder.create (module Direc) ~word_size ~builder_fn:build_directive;
+        Builder.create (module Directive) ~word_size ~builder_fn:Directive.build;
       res_builder =
-        Builder.create (module Reserved) ~word_size ~builder_fn:build_reserved;
+        Builder.create (module Reserved) ~word_size ~builder_fn:Reserved.build;
       token_reader = Token_reader.create toks;
       dgn_printer;
     }

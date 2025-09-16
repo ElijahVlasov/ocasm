@@ -1,10 +1,8 @@
 open! Import
 
 module Mk (I : sig
-  type register
-
   module Reg : sig
-    type t := register
+    type t
 
     val bit_size : t -> int
   end
@@ -19,11 +17,11 @@ end) : sig
     ?len:int ->
     'comm Isa.Expr.t ->
     word_size:int ->
-    builder_fn:(register, 'comm, reloc_data, 'a) Builder_fn.t ->
+    builder_fn:(Reg.t, 'comm, reloc_data, 'a) Builder_fn.t ->
     ('comm, 'a) t
 
   val add_register :
-    ('comm, 'a) t -> register -> (unit, Diagnostics.Error.t) Result.t
+    ('comm, 'a) t -> Reg.t -> (unit, Diagnostics.Error.t) Result.t
 
   val add_rel :
     ('comm, 'a) t ->
@@ -35,7 +33,7 @@ end) : sig
 
   val add_base_offset :
     ('comm, 'a) t ->
-    register ->
+    Reg.t ->
     reloc_data Relocatable.t ->
     (unit, Diagnostics.Error.t) Result.t
 
