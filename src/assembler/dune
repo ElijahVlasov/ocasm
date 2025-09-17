@@ -1,7 +1,7 @@
 (library
- (name ocasm_assembler)
+ (name assembler)
  (public_name ocasm_assembler)
- (libraries ocasm_bfd)
+ (libraries base ocasm_core ocasm_utils)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess

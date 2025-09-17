@@ -3,7 +3,8 @@ opam-version: "2.0"
 depends: [
   "dune" {>= "3.18"}
   "base"
-  "ocasm_bfd"
+  "ocasm_core"
+  "ocasm_utils"
   "odoc" {with-doc}
 ]
 build: [

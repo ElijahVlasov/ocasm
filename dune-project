@@ -41,16 +41,16 @@
  (depends base ctypes ctypes-foreign))
 
 (package
- (name ocasm_assembler)
- (depends base ocasm_bfd))
-
-(package
  (name ocasm_core)
  (depends base))
 
 (package
  (name ocasm_utils)
  (depends base))
+
+(package
+ (name ocasm_assembler)
+ (depends base ocasm_core ocasm_utils))
 
 (package
  (name ocasm_lexer)
