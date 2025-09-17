@@ -32,7 +32,8 @@ end) : sig
 
   type t
 
-  val next : t -> (structured_instruction, structured_directive) Command.t
+  val next :
+    t -> (structured_instruction, structured_directive) Command.t option
 
   val to_seq :
     t -> (structured_instruction, structured_directive) Command.t Sequence.t

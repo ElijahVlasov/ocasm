@@ -35,6 +35,7 @@ struct
   type t = { dsl : Parser_dsl.t; mutable no_errors : bool } [@@deriving fields]
 
   let label st name =
+    (* If the next token is an EOL we consume it too. *)
     (match peek_non_whitespace st.dsl with Eol -> skip st.dsl | _ -> ());
     Command.Label name
 
@@ -117,12 +118,17 @@ struct
     let open Token in
     let open Isa.Token in
     skip_whitespaces_and_newlines st.dsl;
-    match next_non_whitespace st.dsl with
-    | Name name -> must_be_label st name
-    | Isa_specific (Opcode opcode) -> maybe_instruction st opcode
-    | Isa_specific (Dir dir) -> maybe_directive st dir
-    | Eof -> return Command.Eof
-    | tok -> failwith "Unexpected token"
+    let next = next_non_whitespace st.dsl in
+    if Token.is_eof next then return None
+    else
+      let%map res =
+        match next with
+        | Name name -> must_be_label st name
+        | Isa_specific (Opcode opcode) -> maybe_instruction st opcode
+        | Isa_specific (Dir dir) -> maybe_directive st dir
+        | tok -> failwith "Unexpected token"
+      in
+      Some res
 
   (* TODO: implement this. *)
   let recover_aux st =
@@ -158,8 +164,8 @@ struct
     let open Sequence.Generator in
     let rec consume_output () =
       match next st with
-      | Eof -> return ()
-      | token -> yield token >>= consume_output
+      | None -> return ()
+      | Some token -> yield token >>= consume_output
     in
     run @@ consume_output ()
 
