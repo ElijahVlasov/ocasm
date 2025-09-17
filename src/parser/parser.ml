@@ -79,8 +79,7 @@ struct
           failwith
             (Stdlib.Format.sprintf "%a" (fun _ -> Token.show (fun _ _ -> ())) t)
     in
-    let next = next_non_whitespace st.dsl in
-    match next with
+    match next_non_whitespace st.dsl with
     | Comma -> return false
     | Eol | Eof -> return true
     | _ -> error st.dsl @@ Expected Comma
@@ -100,14 +99,17 @@ struct
     let open Token_info in
     let token_info = last_token_info st.dsl in
     let name = token_info.string in
-    let next = next_non_whitespace st.dsl in
-    match next with
+    match next_non_whitespace st.dsl with
     | Colon -> return @@ label st name
-    | _ -> build_command st next with_builder constr
+    | _ as next -> build_command st next with_builder constr
 
+  (* We end up here if we suspect that we are observing an instruction. *)
+  (* It might happen that we have a label that coincides with an instruction. *)
   let maybe_instruction st opcode =
     maybe_command st (with_opcode_builder st.dsl opcode) Command.instruction
 
+  (* We end up here if we suspect that we are observing a directive. *)
+  (* It might happen that we have a label that coincides with a directive. *)
   let maybe_directive st dir =
     maybe_command st (with_dir_builder st.dsl dir) Command.directive
 
