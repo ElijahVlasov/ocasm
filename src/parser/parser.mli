@@ -2,29 +2,48 @@ open! Import
 module Argument = Argument
 module Builder_fn = Builder_fn
 
-module Mk
-    (Opcode : Isa.Expr.S)
-    (Direc : Isa.Expr.S)
-    (Reserved : Isa.Expr.S)
-    (Reg : Isa.Register.S)
-    (Reloc_data : T.T)
-    (Struct_instr : T.T)
-    (Struct_dir : T.T) : sig
+module Mk (I : sig
+  module Reg : Isa.Register.S
+
+  type reloc_data
+  type structured_instruction
+
+  module Opcode : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, structured_instruction) Builder_fn.t
+  end
+
+  type structured_directive
+
+  module Directive : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, structured_directive) Builder_fn.t
+  end
+
+  module Reserved : sig
+    include Isa.Expr.S
+
+    val build : (Reg.t, t, reloc_data, reloc_data Relocatable.t) Builder_fn.t
+  end
+end) : sig
+  open I
+
   type t
 
-  val next : t -> (Struct_instr.t, Struct_dir.t) Command.t
-  val to_seq : t -> (Struct_instr.t, Struct_dir.t) Command.t Sequence.t
-  val to_list : t -> (Struct_instr.t, Struct_dir.t) Command.t list
+  val next : t -> (structured_instruction, structured_directive) Command.t
+
+  val to_seq :
+    t -> (structured_instruction, structured_directive) Command.t Sequence.t
+
+  val to_list :
+    t -> (structured_instruction, structured_directive) Command.t list
 
   val create :
     ?path:Path.t ->
     word_size:int ->
-    build_instruction:
-      (Reg.t, Opcode.t, Reloc_data.t, Struct_instr.t) Builder_fn.t ->
-    build_directive:(Reg.t, Direc.t, Reloc_data.t, Struct_dir.t) Builder_fn.t ->
-    build_reserved:
-      (Reg.t, Reserved.t, Reloc_data.t, Reloc_data.t Relocatable.t) Builder_fn.t ->
-    ((Reg.t, Direc.t, Opcode.t, Reserved.t) Isa.Token.t Token.t
+    ((Reg.t, Directive.t, Opcode.t, Reserved.t) Isa.Token.t Token.t
     * Lexer.Token_info.t)
     Sequence.t ->
     Diagnostics_printer.t ->

@@ -6,31 +6,47 @@ let tokenize content =
 let test_parser input expected () =
   let open Mock_isa in
   let input = tokenize input in
-  let module Parser =
-    Parser.Mk (Mock_opcode) (Mock_dir) (Mock_reserved) (Mock_register) (Unit)
-      (Mock_instruction)
-      (Mock_directive)
-  in
-  let parser =
-    Parser.create ~word_size:32
-      ~build_instruction:(fun opcode args ->
+  let module Parser = Parser.Mk (struct
+    module Reg = Mock_register
+
+    type reloc_data = unit
+    type structured_instruction = Mock_instruction.t
+
+    module Opcode = struct
+      include Mock_opcode
+
+      let build opcode args =
         let arg1 = Argument.unwrap_reg_exn (Array.unsafe_get args 0) in
         let arg2 = Argument.unwrap_reg_exn (Array.unsafe_get args 1) in
         let open Mock_opcode in
         match opcode with
         | Opcode1 -> Mock_instruction.Opcode1 (arg1, arg2)
-        | Opcode2 -> Mock_instruction.Opcode2 (arg1, arg2))
-      ~build_directive:(fun dir args ->
+        | Opcode2 -> Mock_instruction.Opcode2 (arg1, arg2)
+    end
+
+    type structured_directive = Mock_directive.t
+
+    module Directive = struct
+      include Mock_dir
+
+      let build dir args =
         let arg1 =
           Argument.unwrap_string_literal_exn (Array.unsafe_get args 0)
         in
         let open Mock_dir in
         match dir with
         | Dir1 -> Mock_directive.Dir1 arg1
-        | Dir2 -> Mock_directive.Dir2 arg1)
-      ~build_reserved:(fun _ _ -> Panic.unreachable ())
-      input
-      (Diagnostics_printer.create ())
+        | Dir2 -> Mock_directive.Dir2 arg1
+    end
+
+    module Reserved = struct
+      include Mock_reserved
+
+      let build = fun _ _ -> Panic.unreachable ()
+    end
+  end) in
+  let parser =
+    Parser.create ~word_size:32 input (Diagnostics_printer.create ())
   in
   let got = Parser.to_list parser in
   Alcotest.check

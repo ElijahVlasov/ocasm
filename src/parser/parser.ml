@@ -92,17 +92,24 @@ struct
       let next = next_non_whitespace st.dsl in
       parse_args st bldr next
 
-  let build_command st next with_builder =
-    with_builder @@ fun bldr -> parse_args st bldr next
+  let build_command st next with_builder constr =
+    let%map comm = with_builder @@ fun bldr -> parse_args st bldr next in
+    constr comm
 
-  let maybe_command st with_builder =
+  let maybe_command st with_builder constr =
     let open Token_info in
     let token_info = last_token_info st.dsl in
     let name = token_info.string in
     let next = next_non_whitespace st.dsl in
     match next with
     | Colon -> return @@ label st name
-    | _ -> build_command st next with_builder
+    | _ -> build_command st next with_builder constr
+
+  let maybe_instruction st opcode =
+    maybe_command st (with_opcode_builder st.dsl opcode) Command.instruction
+
+  let maybe_directive st dir =
+    maybe_command st (with_dir_builder st.dsl dir) Command.directive
 
   let next_aux st =
     let open Token in
@@ -110,9 +117,8 @@ struct
     skip_whitespaces_and_newlines st.dsl;
     match next_non_whitespace st.dsl with
     | Name name -> must_be_label st name
-    | Isa_specific (Opcode opcode) ->
-        maybe_command st (with_opcode_builder st.dsl opcode)
-    | Isa_specific (Dir dir) -> maybe_command st (with_dir_builder st.dsl dir)
+    | Isa_specific (Opcode opcode) -> maybe_instruction st opcode
+    | Isa_specific (Dir dir) -> maybe_directive st dir
     | Eof -> return Command.Eof
     | tok -> failwith "Unexpected token"
 
@@ -143,18 +149,8 @@ struct
         recover st err;
         next st
 
-  let create ?(path = Path.empty) ~word_size ~build_instruction ~build_directive
-      ~build_reserved toks dgn_printer =
-    let build_instruction x arg =
-      Command.instruction @@ build_instruction x arg
-    in
-    let build_directive x arg = Command.directive @@ build_directive x arg in
-    {
-      dsl =
-        create ~path ~word_size ~build_instruction ~build_directive
-          ~build_reserved toks dgn_printer;
-      no_errors = true;
-    }
+  let create ?(path = Path.empty) ~word_size toks dgn_printer =
+    { dsl = create ~path ~word_size toks dgn_printer; no_errors = true }
 
   let to_seq st =
     let open Sequence.Generator in
