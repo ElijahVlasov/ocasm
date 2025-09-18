@@ -1,4 +1,4 @@
-open Base
+open! Import
 
 type t =
   | Ascii of string list
@@ -8,5 +8,3 @@ type t =
   | Section of Section.t
   (* Should this involve word type stuff? *)
   | Word of int32 list
-
-val assemble_directive : 'a State.t -> t -> unit
