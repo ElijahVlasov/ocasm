@@ -7,6 +7,7 @@ type t =
   | Skip of int
   | Section of Section.t
   | Word of int32 list
+<<<<<<< HEAD
 
 (* let assemble_directive s d = *)
 (*   let sec_s = State.section_state s in *)
@@ -23,3 +24,5 @@ type t =
 (*   | Skip n -> Section_state.inc_loc_counter sec_s n *)
 (*   | Section sec -> Section_state.switch_section sec_s sec *)
 (*   | Word ws -> List.iter ws ~f:(Section_state.write_int32 sec_s) *)
+=======
+>>>>>>> 4b5b1d1 (WIP)

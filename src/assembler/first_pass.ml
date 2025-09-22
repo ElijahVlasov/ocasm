@@ -11,10 +11,10 @@ struct
 
   type t = {
     sections :
-      ( string,
-        int * (instruction, Directive.t) Preprocessed_command.t )
+      ( Section.t,
+        (int * (instruction, Directive.t) Preprocessed_command.t) Array.t )
       Hashtbl.t;
-    symtab : (string, unit) Hashtbl.t;
+    symtab : (string, Section.t * int) Hashtbl.t;
     mutable curr_sec : string;
   }
 

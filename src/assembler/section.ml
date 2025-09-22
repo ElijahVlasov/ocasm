@@ -1,9 +1,8 @@
-open Base
+open! Import
 
-type t = ROData | Text | Data | Bss [@@deriving eq, ord, hash, compare, sexp]
+type t = string [@@deriving eq, show]
 
-let to_string = function
-  | ROData -> ".rodata"
-  | Data -> ".data"
-  | Text -> ".text"
-  | Bss -> ".bss"
+let of_string x =
+  match x.(0) with
+  | '.' -> x
+  | _ -> failwith "A section name has to begin with \".\""

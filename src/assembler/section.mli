@@ -1,7 +1,3 @@
-open Base
+open! Import
 
-type t = ROData | Text | Data | Bss [@@deriving eq, ord, hash, compare, sexp]
-
-include Equal.S with type t := t
-
-val to_string : t -> string
+type t = private string [@@deriving eq, show]
