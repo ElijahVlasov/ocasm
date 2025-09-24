@@ -1,8 +1,0 @@
-open Base
-
-type 'a t = {
-  section : Section.t;
-  name : string;
-  value : 'a;
-  flags : Ocasm_bfd.Symbol_flags.t;
-}

@@ -7,4 +7,6 @@ type t =
   | Skip of int
   | Section of Section.t
   (* Should this involve word type stuff? *)
-  | Word of int32 list
+  | Word32 of int32 list
+
+val byte_size : t -> int

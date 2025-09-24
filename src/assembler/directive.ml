@@ -6,23 +6,14 @@ type t =
   | Byte of bytes
   | Skip of int
   | Section of Section.t
-  | Word of int32 list
-<<<<<<< HEAD
+  | Word32 of int32 list
 
-(* let assemble_directive s d = *)
-(*   let sec_s = State.section_state s in *)
-(*   let stab_s = State.symtab_state s in *)
-(*   match d with *)
-(*   | Ascii strs -> List.iter strs ~f:(Section_state.write_string sec_s) *)
-(*   | Asciiz strs -> *)
-(*       let write_stringz str = *)
-(*         Section_state.write_string sec_s str; *)
-(*         Section_state.write_byte sec_s '\x00' *)
-(*       in *)
-(*       List.iter strs ~f:write_stringz *)
-(*   | Byte bs -> Section_state.write_bytes sec_s bs *)
-(*   | Skip n -> Section_state.inc_loc_counter sec_s n *)
-(*   | Section sec -> Section_state.switch_section sec_s sec *)
-(*   | Word ws -> List.iter ws ~f:(Section_state.write_int32 sec_s) *)
-=======
->>>>>>> 4b5b1d1 (WIP)
+let byte_size = function
+  | Ascii strs ->
+      List.fold strs ~init:0 ~f:(fun acc str -> acc + String.length str)
+  | Asciiz strs ->
+      List.fold strs ~init:0 ~f:(fun acc str -> acc + String.length str + 1)
+  | Byte bs -> Bytes.length bs
+  | Skip off -> off
+  | Section _ -> 0
+  | Word32 lst -> 4 * List.length lst
