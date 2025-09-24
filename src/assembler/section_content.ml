@@ -17,7 +17,11 @@ struct
     mutable curr_offset : int;
     mutable curr_idx : int;
     data : data_piece Array.t;
+    name : Section.t;
   }
+  [@@deriving fields]
+
+  let length content = content.curr_idx
 
   let bump content off =
     content.curr_offset <- content.curr_offset + off;
@@ -45,8 +49,9 @@ struct
       f (elem.offset, Option.value_exn elem.command)
     done
 
-  let create capacity =
+  let create capacity name =
     {
+      name;
       curr_offset = 0;
       curr_idx = 0;
       data = Array.create ~len:capacity { offset = 0; command = None };

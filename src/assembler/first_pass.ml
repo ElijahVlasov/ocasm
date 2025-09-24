@@ -13,17 +13,22 @@ struct
 
   type t = {
     sections : (Section.t, Section_content.t) Hashtbl.t;
-    symtab : (string, Section.t * int) Hashtbl.t;
-    mutable curr_sec : Section.t;
+    symtab : (string, Symbol.t) Hashtbl.t;
+    capacity : int;
+    mutable curr_sec : Section_content.t;
   }
   [@@deriving fields]
 
-  let add_instr st instr =
-    (* let sec = Hashtbl.finds.(st.curr_sec) in *)
-    Panic.unimplemented ()
+  let add_directive st = Section_content.add_dir st.curr_sec
+  let add_instr st = Section_content.add_instr st.curr_sec
 
-  let add_directive st dir = Panic.unimplemented ()
-  let switch_section st sec = Panic.unimplemented ()
+  let switch_section st sec =
+    match Hashtbl.find st.sections sec with
+    | None ->
+        let new_section = Section_content.create st.capacity sec in
+        Hashtbl.add_exn st.sections ~key:sec ~data:new_section;
+        st.curr_sec <- new_section
+    | Some content -> st.curr_sec <- content
 
   let consume st = function
     | Command.Instruction pseudoinstr ->
@@ -32,12 +37,25 @@ struct
         match dir with
         | Directive.Section sec -> switch_section st sec
         | _ -> add_directive st dir)
-    | Label label -> Panic.unimplemented ()
+    | Label label ->
+        let open Symbol in
+        let sym =
+          {
+            offset = Section_content.curr_offset st.curr_sec;
+            section = Section_content.name st.curr_sec;
+          }
+        in
+        Hashtbl.update st.symtab label ~f:(fun _ -> sym)
 
-  let create () =
+  let create capacity () =
+    let text_section_name = Section.of_string ".text" in
+    let text_section = Section_content.create capacity text_section_name in
+    let sections = Hashtbl.create (module Section) in
+    Hashtbl.add_exn sections ~key:text_section_name ~data:text_section;
     {
-      sections = Hashtbl.create (module Section);
+      sections;
+      capacity;
       symtab = Hashtbl.create (module String);
-      curr_sec = Section.of_string ".text";
+      curr_sec = text_section;
     }
 end
