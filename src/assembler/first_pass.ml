@@ -47,7 +47,7 @@ struct
         in
         Hashtbl.update st.symtab label ~f:(fun _ -> sym)
 
-  let create capacity () =
+  let create capacity =
     let text_section_name = Section.of_string ".text" in
     let text_section = Section_content.create capacity text_section_name in
     let sections = Hashtbl.create (module Section) in
