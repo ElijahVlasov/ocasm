@@ -18,13 +18,21 @@ module Mk (I : sig
   end
 end) =
 struct
-  let assemble_directive section offset dir = ()
+  let assemble_directive section offset = function
+    | Directive.Ascii strs -> _
+    | Directive.Asciiz _ -> _
+    | Directive.Byte _ -> _
+    | Directive.Skip _ -> _
+    | Directive.Section _ -> _
+    | Directive.Word32 _ -> _
+
   let assemble_instruction section offset instr = ()
 
   let pass_section ~key:section ~data:section_data =
     let length = I.Section_content.length section_data in
     let bytes = Bytes.create length in
     I.Section_content.iter section_data ~f:(fun offset command ->
+        I.register_relocations command;
         match command with
         | Preprocessed_command.Directive dir ->
             assemble_directive bytes offset dir
