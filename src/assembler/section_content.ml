@@ -46,7 +46,7 @@ struct
   let iter content ~f =
     for i = 0 to content.curr_idx - 1 do
       let elem = content.data.(i) in
-      f (elem.offset, Option.value_exn elem.command)
+      f elem.offset (Option.value_exn elem.command)
     done
 
   let create capacity name =

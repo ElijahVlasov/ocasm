@@ -16,7 +16,7 @@ end) : sig
 
     val iter :
       t ->
-      f:(int * (I.instruction, Directive.t) Preprocessed_command.t -> unit) ->
+      f:(int -> (I.instruction, Directive.t) Preprocessed_command.t -> unit) ->
       unit
   end
 
