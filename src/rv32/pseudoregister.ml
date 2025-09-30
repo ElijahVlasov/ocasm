@@ -34,6 +34,7 @@ type t =
   | T4
   | T5
   | T6
+  | Reg of Register.t
 [@@deriving eq, show]
 
 let of_string s =
@@ -71,4 +72,4 @@ let of_string s =
   | "t4" -> Some T4
   | "t5" -> Some T5
   | "t6" -> Some T6
-  | _ -> None
+  | s -> Option.map (Register.of_string s) ~f:(fun x -> Reg x)

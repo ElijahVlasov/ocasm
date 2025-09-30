@@ -34,6 +34,7 @@ type t =
   | T4
   | T5
   | T6
+  | Reg of Register.t
 [@@deriving eq, show]
 
 val of_string : string -> t option
