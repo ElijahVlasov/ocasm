@@ -1,12 +1,6 @@
-(ocamllex lexer)
-
-(menhir
- (modules parser)
- (flags (--table)))
-
 (library
  (name rv32)
- (libraries menhirLib ocasm_assembler)
+ (libraries ocasm_assembler)
  (flags
   (:standard -w -26-27-32-37))
  (preprocess
